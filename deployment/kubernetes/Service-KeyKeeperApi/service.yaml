@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: key-keeper-api
+    environment: Development
+  name: key-keeper-api
+  namespace: sirius
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 5000
+  selector:
+    app: key-keeper-api
+  sessionAffinity: None
+  type: ClusterIP
