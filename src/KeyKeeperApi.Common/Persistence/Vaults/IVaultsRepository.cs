@@ -7,6 +7,6 @@ namespace KeyKeeperApi.Common.Persistence.Vaults
     {
         Task<Vault> GetByIdAsync(long vaultId);
 
-        Task AddOrUpdateAsync(Vault vault);
+        Task InsertOrUpdateAsync(Vault vault);
     }
 }

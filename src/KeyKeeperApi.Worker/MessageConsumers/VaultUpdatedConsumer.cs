@@ -41,7 +41,7 @@ namespace KeyKeeperApi.Worker.MessageConsumers
                 UpdatedAt = @event.UpdatedAt
             };
 
-            await _vaultsRepository.AddOrUpdateAsync(vault);
+            await _vaultsRepository.InsertOrUpdateAsync(vault);
 
             _logger.LogInformation($"{nameof(VaultUpdated)} has been processed {{@context}}", @event);
         }

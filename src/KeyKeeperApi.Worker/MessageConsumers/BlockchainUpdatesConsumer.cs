@@ -40,7 +40,7 @@ namespace KeyKeeperApi.Worker.MessageConsumers
                 UpdatedAt = @event.UpdatedAt
             };
 
-            await _blockchainsRepository.AddOrUpdateAsync(blockchain);
+            await _blockchainsRepository.InsertOrUpdateAsync(blockchain);
 
             _logger.LogInformation($"{nameof(BlockchainUpdated)} has been processed {{@context}}", @event);
         }

@@ -1,8 +1,9 @@
-using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using KeyKeeperApi.Common.ReadModels.Blockchains;
+using Z.EntityFramework.Plus;
 
 namespace KeyKeeperApi.Common.Persistence.Blockchains
 {
@@ -22,21 +23,35 @@ namespace KeyKeeperApi.Common.Persistence.Blockchains
             return await context.Blockchains.FindAsync(blockchainId);
         }
 
-        public async Task AddOrUpdateAsync(Blockchain blockchain)
+        public async Task InsertOrUpdateAsync(Blockchain blockchain)
         {
             await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
 
-            try
-            {
-                context.Blockchains.Add(blockchain);
-                await context.SaveChangesAsync();
-            }
-            catch (Exception exception) when (exception.InnerException is PostgresException pgException &&
-                                              pgException.SqlState == PostgresErrorCodes.UniqueViolation)
-            {
-                context.Blockchains.Update(blockchain);
+            var affectedRowsCount = await context.Blockchains
+                .Where(entity => entity.Id == blockchain.Id && entity.UpdatedAt <= blockchain.UpdatedAt)
+                .UpdateAsync(entity => new Blockchain
+                {
+                    Id = blockchain.Id,
+                    TenantId = blockchain.TenantId,
+                    Name = blockchain.Name,
+                    Protocol = blockchain.Protocol,
+                    NetworkType = blockchain.NetworkType,
+                    CreatedAt = blockchain.CreatedAt,
+                    UpdatedAt = blockchain.UpdatedAt
+                });
 
-                await context.SaveChangesAsync();
+            if (affectedRowsCount == 0)
+            {
+                try
+                {
+                    context.Blockchains.Add(blockchain);
+                    await context.SaveChangesAsync();
+                }
+                catch (DbUpdateException exception) when (exception.InnerException is PostgresException pgException &&
+                                                          pgException.SqlState == PostgresErrorCodes.UniqueViolation)
+                {
+                    // ignore
+                }
             }
         }
     }

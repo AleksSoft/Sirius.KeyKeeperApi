@@ -7,6 +7,6 @@ namespace KeyKeeperApi.Common.Persistence.Blockchains
     {
         Task<Blockchain> GetByIdAsync(string blockchainId);
 
-        Task AddOrUpdateAsync(Blockchain blockchain);
+        Task InsertOrUpdateAsync(Blockchain blockchain);
     }
 }
