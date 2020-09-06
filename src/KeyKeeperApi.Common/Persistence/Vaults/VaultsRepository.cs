@@ -16,7 +16,7 @@ namespace KeyKeeperApi.Common.Persistence.Vaults
             _dbContextOptionsBuilder = dbContextOptionsBuilder;
         }
 
-        public async Task<Vault> GetByIdAsync(long vaultId)
+        public async Task<Vault> GetByIdOrDefaultAsync(long vaultId)
         {
             await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
 

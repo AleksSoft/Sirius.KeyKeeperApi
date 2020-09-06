@@ -34,12 +34,12 @@ namespace KeyKeeperApi.Worker.MessageConsumers
         {
             var @event = context.Message;
 
-            var blockchain = await _blockchainsRepository.GetByIdAsync(@event.BlockchainId);
+            var blockchain = await _blockchainsRepository.GetByIdOrDefaultAsync(@event.BlockchainId);
 
             if (blockchain == null)
                 throw new Exception($"Blockchain not found. Id: {@event.BlockchainId}");
 
-            var vault = await _vaultsRepository.GetByIdAsync(@event.VaultId);
+            var vault = await _vaultsRepository.GetByIdOrDefaultAsync(@event.VaultId);
 
             if (vault == null)
                 throw new Exception($"Vault not found. Id: {@event.VaultId}");

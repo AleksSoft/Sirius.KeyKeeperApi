@@ -16,7 +16,7 @@ namespace KeyKeeperApi.Common.Persistence.Blockchains
             _dbContextOptionsBuilder = dbContextOptionsBuilder;
         }
 
-        public async Task<Blockchain> GetByIdAsync(string blockchainId)
+        public async Task<Blockchain> GetByIdOrDefaultAsync(string blockchainId)
         {
             await using var context = new DatabaseContext(_dbContextOptionsBuilder.Options);
 

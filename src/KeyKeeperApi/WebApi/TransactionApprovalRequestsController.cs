@@ -47,7 +47,7 @@ namespace KeyKeeperApi.WebApi
 
             if (!long.TryParse(keyKeeperIdClaim, out var keyKeeperId))
             {
-                ModelState.AddFormattedModelError("", "Key keeper id is not presented in claims.");
+                ModelState.AddModelError("", "Key keeper id is not presented in claims.");
                 return StatusCode(StatusCodes.Status403Forbidden, ModelState);
             }
 
@@ -102,7 +102,7 @@ namespace KeyKeeperApi.WebApi
 
             if (!long.TryParse(keyKeeperIdClaim, out var keyKeeperId))
             {
-                ModelState.AddFormattedModelError("", "Key keeper id is not presented in claims.");
+                ModelState.AddModelError("", "Key keeper id is not presented in claims.");
                 return StatusCode(StatusCodes.Status403Forbidden, ModelState);
             }
 
@@ -120,7 +120,7 @@ namespace KeyKeeperApi.WebApi
 
             if (confirmResponse.BodyCase == ConfirmTransactionApprovalRequestResponse.BodyOneofCase.Error)
             {
-                ModelState.AddFormattedModelError("", confirmResponse.Error.ErrorMessage);
+                ModelState.AddModelError("", confirmResponse.Error.ErrorMessage);
                 return BadRequest(ModelState);
             }
 
@@ -157,7 +157,7 @@ namespace KeyKeeperApi.WebApi
 
             if (!long.TryParse(keyKeeperIdClaim, out var keyKeeperId))
             {
-                ModelState.AddFormattedModelError("", "Key keeper id is not presented in claims.");
+                ModelState.AddModelError("", "Key keeper id is not presented in claims.");
                 return StatusCode(StatusCodes.Status403Forbidden, ModelState);
             }
 
@@ -173,7 +173,7 @@ namespace KeyKeeperApi.WebApi
 
             if (rejectResponse.BodyCase == RejectTransactionApprovalRequestResponse.BodyOneofCase.Error)
             {
-                ModelState.AddFormattedModelError("", rejectResponse.Error.ErrorMessage);
+                ModelState.AddModelError("", rejectResponse.Error.ErrorMessage);
                 return BadRequest(ModelState);
             }
 
@@ -210,7 +210,7 @@ namespace KeyKeeperApi.WebApi
 
             if (!long.TryParse(keyKeeperIdClaim, out var keyKeeperId))
             {
-                ModelState.AddFormattedModelError("", "Key keeper id is not presented in claims.");
+                ModelState.AddModelError("", "Key keeper id is not presented in claims.");
                 return StatusCode(StatusCodes.Status403Forbidden, ModelState);
             }
 
@@ -226,7 +226,7 @@ namespace KeyKeeperApi.WebApi
 
             if (skipResponse.BodyCase == SkipTransactionApprovalRequestResponse.BodyOneofCase.Error)
             {
-                ModelState.AddFormattedModelError("", skipResponse.Error.ErrorMessage);
+                ModelState.AddModelError("", skipResponse.Error.ErrorMessage);
                 return BadRequest(ModelState);
             }
 

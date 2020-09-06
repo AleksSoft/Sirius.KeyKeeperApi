@@ -5,7 +5,7 @@ namespace KeyKeeperApi.Common.Persistence.Vaults
 {
     public interface IVaultsRepository
     {
-        Task<Vault> GetByIdAsync(long vaultId);
+        Task<Vault> GetByIdOrDefaultAsync(long vaultId);
 
         Task InsertOrUpdateAsync(Vault vault);
     }
