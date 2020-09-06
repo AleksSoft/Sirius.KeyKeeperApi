@@ -1,0 +1,12 @@
+{
+  "Db": {
+    "ConnectionString": "${Sirius-KeyKeeperApi-DbConnectionString}"
+  },
+  "Auth": {
+    "JwtSecret": "${JwtTokenSecret}",
+    "Audience": "sirius.swisschain.io"
+  },
+  "VaultAgent": {
+    "Url": "http://vault-agent.sirius.svc.cluster.local/"
+  }
+}
