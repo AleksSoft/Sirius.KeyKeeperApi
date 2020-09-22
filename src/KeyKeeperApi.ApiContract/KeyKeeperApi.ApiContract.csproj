@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>Swisschain.Sirius.KeyKeeperApi.ApiContract</AssemblyName>
+    <PackageId>Swisschain.Sirius.KeyKeeperApi.ApiContract</PackageId>
+    <RootNamespace>Swisschain.Sirius.KeyKeeperApi.ApiContract</RootNamespace>
+    <Authors>Swisschain</Authors>
+    <Product>Sirius</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.12.3" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.29.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.29.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swisschain.Sirius.Sdk" Version="5.0.0-beta.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="isalive.proto" />
+  </ItemGroup>
+
+</Project>

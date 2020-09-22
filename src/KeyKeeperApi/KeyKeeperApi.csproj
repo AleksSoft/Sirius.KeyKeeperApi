@@ -26,7 +26,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\KeyKeeperApi.ApiContract\KeyKeeperApi.ApiContract.csproj" />
     <ProjectReference Include="..\KeyKeeperApi.Common\KeyKeeperApi.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
