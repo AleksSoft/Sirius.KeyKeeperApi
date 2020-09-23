@@ -124,7 +124,7 @@ message PingResponse {
 message ValidatorApiError {
     
     enum ErrorCodes {
-        OK = 0;
+        Unknown = 0;
         InternalServerError = 1; // some error on server side,option try againl later.
         WrongDeviceInfo = 2; // validator will register with another device infp.option Server do not accept request from a new device.
         WrongSignature = 3; // server do not acept signature from the request packege
