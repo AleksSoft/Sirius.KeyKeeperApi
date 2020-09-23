@@ -1,4 +1,8 @@
-﻿syntax = "proto3";
+﻿//
+// Validator API specification. Version: 1.0
+//
+
+syntax = "proto3";
 
 option csharp_namespace = "Swisschain.Sirius.KeyKeeperApi.ApiContract";
 
