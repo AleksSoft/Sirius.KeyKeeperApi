@@ -1,0 +1,135 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "Swisschain.Sirius.KeyKeeperApi.ApiContract";
+
+package ValidatorApi;
+
+service Transfers {
+    rpc GetRequestToApprovalStream (RequestToApprovalRequests) returns (stream RequestToApprovalResponse);
+    rpc GetRequestToApproval (RequestToApprovalRequests) returns (RequestToApprovalResponse);
+
+    rpc ResolveRequestToApproval(ResolveRequestToApprovalRequest) returns (ResolveRequestToApprovalResponse);   
+}
+
+service Invites {
+    rpc Accept (AcceptRequest) returns (AcceptResponse); 
+    rpc GetPing(PingRequest) returns (PingResponse);
+}
+
+
+// ********* Transfers *********
+
+message RequestToApprovalRequests {
+    
+    string deviceInfo = 1; // description of device where runs a client used as a "fingerprint" for device of validator
+
+}
+
+message RequestToApprovalResponse {
+
+    message RequestToApproval {
+
+        enum RequestStatus {
+            open = 0;
+            close = 1;
+        }
+
+        
+        string transferSigningRequestId = 1; // ID of the transfer process to be approved
+
+        RequestStatus status = 2; // status of the request to approval
+
+        bytes transactionDetailEnc = 3; // json with transaction details encrupted by AES algorithm with 'Secret' as key
+
+        bytes secretEnc = 4; // Secret used for encrypt transaction detail. Secret encrypted by RSA algorithm with validator public key
+
+    }
+
+    ValidatorApiError error = 1; // NULL in success case; Error description in error case
+
+    repeated RequestToApproval payload = 2;
+}
+
+message ResolveRequestToApprovalRequest {
+    
+    enum ResolutionStatus {
+        approve = 0; // validator approve a transaction
+        reject = 1;  // validator decline a transaction
+        skip = 2;    // validator do to has any conserns and reasons to decline.option But validator cannot approve it.
+    }
+
+    string DeviceInfo = 1; // description of device where runs a client used as a "fingerprint" for device of validator
+
+    string TransferSigningRequestId = 2; // ID of the transfer process to be approved
+
+    ResolutionStatus resolution = 3; // resolution from validator
+
+    string resolutionMessage = 4; // optional message from validator
+
+    string signature = 5; // signature from validator private key (TransferSigningRequestId, Resolution, ResolutionMessage, TransactionDetail) encoded in base64
+    
+}
+
+message ResolveRequestToApprovalResponse {
+    
+    ValidatorApiError error = 1; // NULL in success case; Error description in error case
+
+}
+
+// ********* Invites *********
+
+message AcceptRequest {
+
+    string deviceInfo = 1; // description of device where runs a client used as a "fingerprint" for device of validator
+
+    string inviteId = 2; // invitation token
+
+    string validatorId = 3; // Id of validator. ID = PublicKeyBytes.Sha256().ToBase64()
+
+}
+
+message AcceptResponse {
+
+    ValidatorApiError error = 1; // NULL in success case; Error description in error case
+
+    string apiKey = 2; // api key to featch approval requests
+    string name = 3; // validator name into broker account
+    string position = 4; // validator position into broker account
+    string description = 5; // validator description into broker account
+}
+
+message PingRequest {
+
+    string deviceInfo = 1; // description of device where runs a client used as a "fingerprint" for device of validator
+
+}
+
+message PingResponse {
+    
+    ValidatorApiError error = 1; // NULL in success case; Error description in error case
+
+    bytes messageEnc = 2; // ping message ncrypted by RSA algorithm with validator public key
+
+    string signatureMessage = 3; // signature for message from Sirius side. Public key to check signature can be hardcoded in client app
+}
+
+
+
+// ********* errors *********
+
+message ValidatorApiError {
+    
+    enum ErrorCodes {
+        OK = 0;
+        InternalServerError = 1; // some error on server side,option try againl later.
+        WrongDeviceInfo = 2; // validator will register with another device infp.option Server do not accept request from a new device.
+        WrongSignature = 3; // server do not acept signature from the request packege
+        WrongInvitation = 4; // Invitation code is incorrect
+        ExpiredInvitation = 5; // Invitation code is expared
+    }
+
+    ErrorCodes code = 1; // error code
+    string message = 2;  // error message in english
+
+
+}

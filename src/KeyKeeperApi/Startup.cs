@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Autofac;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using KeyKeeperApi.Common.Configuration;
 using KeyKeeperApi.Common.HostedServices;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Routing;
 using Swisschain.Sdk.Server.Common;
 using Swisschain.Sirius.VaultAgent.ApiClient;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 
 namespace KeyKeeperApi
 {
@@ -17,6 +19,10 @@ namespace KeyKeeperApi
             : base(configuration)
         {
             AddJwtAuth(Config.Auth.JwtSecret, Config.Auth.Audience);
+        }
+
+        protected override void ConfigureExt(IApplicationBuilder app, IWebHostEnvironment env)
+        {
         }
 
         protected override void ConfigureServicesExt(IServiceCollection services)
@@ -31,6 +37,14 @@ namespace KeyKeeperApi
         protected override void RegisterEndpoints(IEndpointRouteBuilder endpoints)
         {
             endpoints.MapGrpcService<MonitoringService>();
+            endpoints.MapGrpcService<TransfersService>();
+            endpoints.MapGrpcService<InvitesService>();
+        }
+
+        protected override void ConfigureContainerExt(ContainerBuilder builder)
+        {
+            builder.RegisterInstance(Config.TestPubKeys).AsSelf().SingleInstance();
+            builder.RegisterInstance(Config.Auth).AsSelf().SingleInstance();
         }
     }
 }
