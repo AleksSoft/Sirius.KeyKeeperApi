@@ -1,15 +1,19 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using KeyKeeperApi.Common.Configuration;
 using KeyKeeperApi.Common.HostedServices;
 using KeyKeeperApi.Common.Persistence;
 using KeyKeeperApi.Grpc;
+using KeyKeeperApi.MyNoSql;
 using Microsoft.AspNetCore.Routing;
 using Swisschain.Sdk.Server.Common;
 using Swisschain.Sirius.VaultAgent.ApiClient;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using MyNoSqlServer.Abstractions;
+using MyNoSqlServer.DataReader;
 
 namespace KeyKeeperApi
 {
@@ -39,12 +43,45 @@ namespace KeyKeeperApi
             endpoints.MapGrpcService<MonitoringService>();
             endpoints.MapGrpcService<TransfersService>();
             endpoints.MapGrpcService<InvitesService>();
+            endpoints.MapGrpcService<ValidatorsService>();
         }
 
         protected override void ConfigureContainerExt(ContainerBuilder builder)
         {
             builder.RegisterInstance(Config.TestPubKeys).AsSelf().SingleInstance();
             builder.RegisterInstance(Config.Auth).AsSelf().SingleInstance();
+
+            builder.RegisterType<MyNoSqlLifetimeManager>()
+                .As<IStartable>()
+                .AutoActivate()
+                .SingleInstance();
+
+            var noSqlClient = new MyNoSqlTcpClient(
+                () => Config.MyNoSqlServer.ReaderServiceUrl,
+                $"{ApplicationInformation.AppName}-{Environment.MachineName}");
+
+            builder.Register(ctx => noSqlClient)
+                .AsSelf()
+                .As<IMyNoSqlSubscriber>()
+                .SingleInstance();
+
+            RegisterNoSqlReaderAndWriter<ApprovalRequestMyNoSqlEntity>(builder, ApprovalRequestMyNoSqlEntity.TableName);
+        }
+
+        private void RegisterNoSqlReaderAndWriter<TEntity>(ContainerBuilder builder, string table) where TEntity : IMyNoSqlDbEntity, new()
+        {
+            builder
+                .Register(ctx => new MyNoSqlReadRepository<TEntity>(ctx.Resolve<IMyNoSqlSubscriber>(), table))
+                .As<IMyNoSqlServerDataReader<TEntity>>()
+                .SingleInstance();
+
+            builder.Register(ctx =>
+                {
+                    return new MyNoSqlServer.DataWriter.MyNoSqlServerDataWriter<TEntity>(() => Config.MyNoSqlServer.WriterServiceUrl,
+                        table);
+                })
+                .As<IMyNoSqlServerDataWriter<TEntity>>()
+                .SingleInstance();
         }
     }
 }

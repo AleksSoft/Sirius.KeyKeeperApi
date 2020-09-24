@@ -4,15 +4,14 @@
 
 syntax = "proto3";
 
-option csharp_namespace = "Swisschain.Sirius.KeyKeeperApi.ApiContract";
+option csharp_namespace = "Swisschain.Sirius.ValidatorApi";
 
 package ValidatorApi;
 
 service Transfers {
-    rpc GetRequestToApprovalStream (RequestToApprovalRequests) returns (stream RequestToApprovalResponse);
-    rpc GetRequestToApproval (RequestToApprovalRequests) returns (RequestToApprovalResponse);
+    rpc GetApprovalRequests (GetApprovalRequestsRequests) returns (GetApprovalRequestsResponse);
 
-    rpc ResolveRequestToApproval(ResolveRequestToApprovalRequest) returns (ResolveRequestToApprovalResponse);   
+    rpc ResolveApprovalRequests(ResolveApprovalRequestsRequest) returns (ResolveApprovalRequestsResponse);   
 }
 
 service Invites {
@@ -23,15 +22,15 @@ service Invites {
 
 // ********* Transfers *********
 
-message RequestToApprovalRequests {
+message GetApprovalRequestsRequests {
     
     string deviceInfo = 1; // description of device where runs a client used as a "fingerprint" for device of validator
 
 }
 
-message RequestToApprovalResponse {
+message GetApprovalRequestsResponse {
 
-    message RequestToApproval {
+    message ApprovalRequest {
 
         enum RequestStatus {
             open = 0;
@@ -43,7 +42,7 @@ message RequestToApprovalResponse {
 
         RequestStatus status = 2; // status of the request to approval
 
-        bytes transactionDetailEnc = 3; // json with transaction details encrupted by AES algorithm with 'Secret' as key
+        bytes transactionDetailsEnc = 3; // json with transaction details encrupted by AES algorithm with 'Secret' as key
 
         bytes secretEnc = 4; // Secret used for encrypt transaction detail. Secret encrypted by RSA algorithm with validator public key
 
@@ -51,10 +50,10 @@ message RequestToApprovalResponse {
 
     ValidatorApiError error = 1; // NULL in success case; Error description in error case
 
-    repeated RequestToApproval payload = 2;
+    repeated ApprovalRequest payload = 2;
 }
 
-message ResolveRequestToApprovalRequest {
+message ResolveApprovalRequestsRequest {
     
     enum ResolutionStatus {
         approve = 0; // validator approve a transaction
@@ -74,7 +73,7 @@ message ResolveRequestToApprovalRequest {
     
 }
 
-message ResolveRequestToApprovalResponse {
+message ResolveApprovalRequestsResponse {
     
     ValidatorApiError error = 1; // NULL in success case; Error description in error case
 

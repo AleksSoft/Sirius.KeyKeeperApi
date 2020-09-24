@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Google.Protobuf;
@@ -7,11 +7,12 @@ using Grpc.Core;
 using KeyKeeperApi.Common.Configuration;
 using KeyKeeperApi.Consts;
 using KeyKeeperApi.Grpc.tools;
+using KeyKeeperApi.MyNoSql;
 using Microsoft.AspNetCore.Authorization;
+using MyNoSqlServer.Abstractions;
 using Newtonsoft.Json;
 using Swisschain.Sdk.Server.Authorization;
-using Swisschain.Sirius.KeyKeeperApi.ApiContract;
-using JsonSerializer = System.Text.Json.JsonSerializer;
+using Swisschain.Sirius.ValidatorApi;
 
 namespace KeyKeeperApi.Grpc
 {
@@ -19,143 +20,150 @@ namespace KeyKeeperApi.Grpc
     public class TransfersService : Transfers.TransfersBase
     {
         private readonly TestKeys _testPubKeys;
+        private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _approvalRequestReader;
+        private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _approvalRequestWriter;
 
-        public TransfersService(TestKeys testPubKeys)
+        public TransfersService(TestKeys testPubKeys, IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> approvalRequestReader,
+            IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> approvalRequestWriter)
         {
             _testPubKeys = testPubKeys;
-        }
-
-        public override Task GetRequestToApprovalStream(RequestToApprovalRequests request,
-            IServerStreamWriter<RequestToApprovalResponse> responseStream,
-            ServerCallContext context)
-        {
-            return base.GetRequestToApprovalStream(request, responseStream, context);
+            _approvalRequestReader = approvalRequestReader;
+            _approvalRequestWriter = approvalRequestWriter;
         }
 
         private static Random _rnd = new Random();
 
-        public override Task<RequestToApprovalResponse> GetRequestToApproval(RequestToApprovalRequests request, ServerCallContext context)
+        public override Task<GetApprovalRequestsResponse> GetApprovalRequests(GetApprovalRequestsRequests request, ServerCallContext context)
         {
             var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
 
-            if (!_testPubKeys.TryGetValue(validatorId, out var publicKey))
+            var res = new GetApprovalRequestsResponse();
+
+            var requests = _approvalRequestReader.Get(ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(validatorId))
+                .Where(r => r.Resolution == ApprovalRequestMyNoSqlEntity.ResolutionType.Empty);
+            //todo: add filter by tenant from API key, need to add tenant into api key
+
+            foreach (var entity in requests)
             {
-                return Task.FromResult(new RequestToApprovalResponse()
+                var item = new GetApprovalRequestsResponse.Types.ApprovalRequest()
                 {
-                    Error = new ValidatorApiError()
-                    {
-                        Code = ValidatorApiError.Types.ErrorCodes.InternalServerError,
-                        Message = "Validator do not found by ID"
-                    }
-                });
+                    TransferSigningRequestId = entity.TransferSigningRequestId,
+                    Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open,
+                    TransactionDetailsEnc = ByteString.CopyFrom(entity.MessageEnc),
+                    SecretEnc = ByteString.CopyFrom(entity.SecretEnc)
+                };
+                res.Payload.Add(item);
             }
 
+            // add fake data to test
 
-            var requestId = Guid.NewGuid().ToString("N");
-            var transaction = new TransactionDetails()
+            if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
             {
-                OperationId = Guid.NewGuid().ToString("N"),
-                Amount = _rnd.Next(10).ToString(),
-                Asset = new TransactionDetails.AssetModel()
+
+                var requestId = Guid.NewGuid().ToString("N");
+                var transaction = new TransactionDetails()
                 {
-                    AssetAddress = string.Empty,
-                    AssetId = string.Empty,
-                    Symbol = _rnd.Next(10) > 5 ? "BTC" : "ETH"
-                },
-                NetworkType = _rnd.Next(10) > 5 ? "mainnet" : "testnet",
-                BlockchainId = string.Empty,
-                Source = new TransactionDetails.AddressData()
+                    OperationId = Guid.NewGuid().ToString("N"),
+                    Amount = _rnd.Next(10).ToString(),
+                    Asset = new TransactionDetails.AssetModel()
+                    {
+                        AssetAddress = string.Empty,
+                        AssetId = string.Empty,
+                        Symbol = _rnd.Next(10) > 5 ? "BTC" : "ETH"
+                    },
+                    NetworkType = _rnd.Next(10) > 5 ? "mainnet" : "testnet",
+                    BlockchainId = string.Empty,
+                    Source = new TransactionDetails.AddressData()
+                    {
+                        Address = Guid.NewGuid().ToString("N"),
+                        AddressGroup = "Broker Account #1",
+                        Name = string.Empty,
+                        Tag = string.Empty,
+                        TagType = string.Empty
+                    },
+                    Destination = new TransactionDetails.AddressData()
+                    {
+                        Address = Guid.NewGuid().ToString("N"),
+                        AddressGroup = _rnd.Next(10) < 8 ? string.Empty : "Broker Account #2",
+                        Name = string.Empty,
+                        Tag = string.Empty,
+                        TagType = string.Empty
+                    },
+                    FeeLimit = "0.001",
+                    ClientContext = new TransactionDetails.ClientContextModel()
+                    {
+                        AccountReferenceId = _rnd.Next(1000000).ToString(),
+                        ApiKeyId = "Api key #" + _rnd.Next(5),
+                        IP = "172.164.20.2",
+                        Timestamp = DateTime.UtcNow.ToString("O"),
+                        UserId = _rnd.Next(100) < 80 ? string.Empty : "alexey.novichikhin",
+                        WithdrawalReferenceId = "account-" + _rnd.Next(1000000)
+                    }
+                };
+                transaction.BlockchainId = transaction.Asset.Symbol == "BTC" ? "Bitcoin" : "Ethereum";
+
+                var json = JsonConvert.SerializeObject(transaction);
+
+                var approvalRequest = new GetApprovalRequestsResponse.Types.ApprovalRequest();
+
+                var symcrypto = new SymmetricEncryptionService();
+                var secret = symcrypto.GenerateKey();
+                var message = symcrypto.Encrypt(Encoding.UTF8.GetBytes(json), secret);
+                approvalRequest.TransactionDetailsEnc = ByteString.CopyFrom(message);
+
+                var asynccrypto = new AsymmetricEncryptionService();
+                var secretEnc = asynccrypto.Encrypt(secret, publicKey);
+                approvalRequest.SecretEnc = ByteString.CopyFrom(secretEnc);
+
+                approvalRequest.Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open;
+                approvalRequest.TransferSigningRequestId = requestId;
+
+
+                res.Payload.Add(approvalRequest);
+                res.Payload.Add(new GetApprovalRequestsResponse.Types.ApprovalRequest()
                 {
-                    Address = Guid.NewGuid().ToString("N"),
-                    AddressGroup = "Broker Account #1",
-                    Name = string.Empty,
-                    Tag = string.Empty,
-                    TagType = string.Empty
-                },
-                Destination = new TransactionDetails.AddressData()
-                {
-                    Address = Guid.NewGuid().ToString("N"),
-                    AddressGroup = _rnd.Next(10) < 8 ? string.Empty : "Broker Account #2",
-                    Name = string.Empty,
-                    Tag = string.Empty,
-                    TagType = string.Empty
-                },
-                FeeLimit = "0.001",
-                ClientContext = new TransactionDetails.ClientContextModel()
-                {
-                    AccountReferenceId = _rnd.Next(1000000).ToString(),
-                    ApiKeyId = "Api key #" + _rnd.Next(5),
-                    IP = "172.164.20.2",
-                    Timestamp = DateTime.UtcNow.ToString("O"),
-                    UserId = _rnd.Next(100) < 80 ? string.Empty : "alexey.novichikhin",
-                    WithdrawalReferenceId = "account-"+_rnd.Next(1000000)
-                }
-            };
-            transaction.BlockchainId = transaction.Asset.Symbol == "BTC" ? "Bitcoin" : "Ethereum";
-
-            var json = JsonConvert.SerializeObject(transaction);
-
-            var rta = new RequestToApprovalResponse.Types.RequestToApproval();
-
-            var symcrypto = new SymmetricEncryptionService();
-            var secret = symcrypto.GenerateKey();
-            var message = symcrypto.Encrypt(Encoding.UTF8.GetBytes(json), secret);
-            rta.TransactionDetailEnc = ByteString.CopyFrom(message);
-
-            var asynccrypto = new AsymmetricEncryptionService();
-            var secretEnc = asynccrypto.Encrypt(secret, publicKey);
-            rta.SecretEnc = ByteString.CopyFrom(secretEnc);
-
-            rta.Status = RequestToApprovalResponse.Types.RequestToApproval.Types.RequestStatus.Open;
-            rta.TransferSigningRequestId = requestId;
-
-            var res = new RequestToApprovalResponse();
-            res.Payload.Add(rta);
-            res.Payload.Add(new RequestToApprovalResponse.Types.RequestToApproval()
-            {
-                Status = RequestToApprovalResponse.Types.RequestToApproval.Types.RequestStatus.Open,
-                TransferSigningRequestId = requestId + "-1",
-                TransactionDetailEnc = ByteString.CopyFrom(message),
-                SecretEnc = ByteString.CopyFrom(secretEnc)
-            });
-            res.Payload.Add(new RequestToApprovalResponse.Types.RequestToApproval()
-            {
-                Status = RequestToApprovalResponse.Types.RequestToApproval.Types.RequestStatus.Open,
-                TransferSigningRequestId = requestId + "-2",
-                TransactionDetailEnc = ByteString.CopyFrom(message),
-                SecretEnc = ByteString.CopyFrom(secretEnc)
-            });
-
-            _requests[requestId] = json;
-            _requests[requestId + "-1"] = json;
-            _requests[requestId + "-2"] = json;
+                    Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open,
+                    TransferSigningRequestId = requestId + "-1",
+                    TransactionDetailsEnc = ByteString.CopyFrom(message),
+                    SecretEnc = ByteString.CopyFrom(secretEnc)
+                });
+            }
 
             return Task.FromResult(res);
         }
 
-        private static Dictionary<string, string> _requests = new Dictionary<string, string>();
-
-        public override Task<ResolveRequestToApprovalResponse> ResolveRequestToApproval(ResolveRequestToApprovalRequest request, ServerCallContext context)
+        public override async Task<ResolveApprovalRequestsResponse> ResolveApprovalRequests(ResolveApprovalRequestsRequest request, ServerCallContext context)
         {
-            if (!_requests.TryGetValue(request.TransferSigningRequestId, out var transaction))
+            var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
+
+            var approvalRequest = _approvalRequestReader.Get(
+                    ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(validatorId),
+                    ApprovalRequestMyNoSqlEntity.GenerateRowKey(request.TransferSigningRequestId));
+
+            if (approvalRequest == null || approvalRequest.Resolution != ApprovalRequestMyNoSqlEntity.ResolutionType.Empty)
             {
-                return Task.FromResult(new ResolveRequestToApprovalResponse());
+                return new ResolveApprovalRequestsResponse();
             }
 
-            _requests.Remove(request.TransferSigningRequestId);
-
-            var docObj = new
+            switch (request.Resolution)
             {
-                TransferSigningRequestId = request.TransferSigningRequestId,
-                Resolution = request.Resolution,
-                ResolutionMessage = request.ResolutionMessage,
-                TransactionDetail = transaction
-            };
-            var doc = JsonSerializer.Serialize(docObj);
+                case ResolveApprovalRequestsRequest.Types.ResolutionStatus.Approve:
+                    approvalRequest.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Approve;
+                    break;
+                case ResolveApprovalRequestsRequest.Types.ResolutionStatus.Reject:
+                    approvalRequest.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Reject;
+                    break;
+                case ResolveApprovalRequestsRequest.Types.ResolutionStatus.Skip:
+                    approvalRequest.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Skip;
+                    break;
+            }
 
-            //todo: check signature
+            approvalRequest.ResolutionMessage = request.ResolutionMessage;
+            approvalRequest.ResolutionSignature = request.Signature;
 
-            return Task.FromResult(new ResolveRequestToApprovalResponse());
+            await _approvalRequestWriter.InsertOrReplaceAsync(approvalRequest);
+            
+            return new ResolveApprovalRequestsResponse();
         }
 
 

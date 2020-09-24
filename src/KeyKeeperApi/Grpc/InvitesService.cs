@@ -12,7 +12,7 @@ using KeyKeeperApi.Grpc.tools;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Swisschain.Sdk.Server.Authorization;
-using Swisschain.Sirius.KeyKeeperApi.ApiContract;
+using Swisschain.Sirius.ValidatorApi;
 
 namespace KeyKeeperApi.Grpc
 {

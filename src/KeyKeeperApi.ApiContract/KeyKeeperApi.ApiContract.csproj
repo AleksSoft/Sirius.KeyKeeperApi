@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="guardian-validator-api.proto" />
     <None Remove="validator-api.proto" />
   </ItemGroup>
 
@@ -24,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Protobuf Include="guardian-validator-api.proto" />
     <Protobuf Include="validator-api.proto" />
     <Protobuf Include="isalive.proto" />
   </ItemGroup>
