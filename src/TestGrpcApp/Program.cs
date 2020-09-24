@@ -75,7 +75,7 @@ namespace TestGrpcApp
 
             try
             {
-                var resp = api.GetRequestToApproval(new RequestToApprovalRequests());
+                var resp = api.GetApprovalRequests(new GetApprovalRequestsRequests());
 
 
                 Console.WriteLine(resp.Payload.ToString());
