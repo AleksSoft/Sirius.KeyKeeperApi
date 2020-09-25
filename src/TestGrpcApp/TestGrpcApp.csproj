@@ -10,4 +10,13 @@
     <ProjectReference Include="..\KeyKeeperApi\KeyKeeperApi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="private-key-test.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="public-key-test.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

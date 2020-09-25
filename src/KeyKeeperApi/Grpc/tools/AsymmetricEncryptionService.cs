@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Security.Cryptography;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -34,8 +36,10 @@ namespace KeyKeeperApi.Grpc.tools
                 publicKeyParameters = (AsymmetricKeyParameter)pemReader.ReadObject();
             }
 
-            var cipher = new RsaEngine();
+            var cipher = new Pkcs1Encoding(new RsaEngine());
+
             cipher.Init(true, publicKeyParameters);
+            Console.WriteLine(cipher.AlgorithmName);
 
             var cipheredData = cipher.ProcessBlock(data, 0, data.Length);
 
@@ -51,20 +55,21 @@ namespace KeyKeeperApi.Grpc.tools
 
         public byte[] Decrypt(byte[] data, string privateKey)
         {
-            AsymmetricCipherKeyPair keyPair;
-
             using (var reader = new StringReader(privateKey))
             {
-                var pemReader = new PemReader(reader);
-                keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
+                // https://stackoverflow.com/a/60423034
+                var pemReader = new Org.BouncyCastle.Utilities.IO.Pem.PemReader(reader);
+                var pem = pemReader.ReadPemObject();
+
+                AsymmetricKeyParameter pk = PrivateKeyFactory.CreateKey(pem.Content);
+                
+                var cipher1 = new Pkcs1Encoding(new RsaEngine());
+                cipher1.Init(false, (ICipherParameters)pk);
+
+                var decipheredData = cipher1.ProcessBlock(data, 0, data.Length);
+
+                return decipheredData;
             }
-
-            var cipher = new RsaEngine();
-            cipher.Init(false, (RsaKeyParameters)keyPair.Private);
-
-            var decipheredData = cipher.ProcessBlock(data, 0, data.Length);
-
-            return decipheredData;
         }
 
         public Tuple<string, string> GenerateKeyPairPem()
