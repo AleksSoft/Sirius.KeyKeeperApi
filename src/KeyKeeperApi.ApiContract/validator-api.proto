@@ -42,9 +42,9 @@ message GetApprovalRequestsResponse {
 
         RequestStatus status = 2; // status of the request to approval
 
-        bytes transactionDetailsEnc = 3; // json with transaction details encrupted by AES algorithm with 'Secret' as key
+        string transactionDetailsEncBase64 = 3; // json with transaction details encrupted by AES algorithm with 'Secret' as key. Formar: base64
 
-        bytes secretEnc = 4; // Secret used for encrypt transaction detail. Secret encrypted by RSA algorithm with validator public key
+        string secretEncBase64 = 4; // Secret used for encrypt transaction detail. Secret encrypted by RSA algorithm with validator public key. Formar: base64
 
     }
 

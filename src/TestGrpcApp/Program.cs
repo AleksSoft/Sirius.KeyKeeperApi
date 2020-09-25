@@ -48,6 +48,17 @@ namespace TestGrpcApp
             var txt = Encoding.UTF8.GetString(res);
             Console.WriteLine(txt);
 
+
+            var s64 =
+                "Y1hLuvDfQ4Dr71zIBYwcOPIfpzIMo+RWpgaY3A51s4xS1NeHcrWMCfMr4qq8d0mQbotx4g0UXu8Y4yTZSuYMeMW8ezjzGpbzV8aikk1Skc72OnmUuwt8/ns/HVQmMwYumn0VlKGiJMKiFOUHROUBC3D1bAv1L363qnu1Vmiifn8=";
+            var d1 = Convert.FromBase64String(s64);
+
+            res = algo.Decrypt(enc, privateStr);
+
+            txt = Convert.ToBase64String(res);
+            Console.WriteLine(txt);
+
+
             Console.ReadLine();
         }
 

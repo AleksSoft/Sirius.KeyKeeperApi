@@ -49,8 +49,8 @@ namespace KeyKeeperApi.Grpc
                 {
                     TransferSigningRequestId = entity.TransferSigningRequestId,
                     Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open,
-                    TransactionDetailsEnc = ByteString.CopyFrom(entity.MessageEnc),
-                    SecretEnc = ByteString.CopyFrom(entity.SecretEnc)
+                    TransactionDetailsEncBase64 = Convert.ToBase64String(entity.MessageEnc),
+                    SecretEncBase64 = Convert.ToBase64String(entity.SecretEnc)
                 };
                 res.Payload.Add(item);
             }
@@ -109,11 +109,11 @@ namespace KeyKeeperApi.Grpc
                 var symcrypto = new SymmetricEncryptionService();
                 var secret = symcrypto.GenerateKey();
                 var message = symcrypto.Encrypt(Encoding.UTF8.GetBytes(json), secret);
-                approvalRequest.TransactionDetailsEnc = ByteString.CopyFrom(message);
+                approvalRequest.TransactionDetailsEncBase64 = Convert.ToBase64String(message);
 
                 var asynccrypto = new AsymmetricEncryptionService();
                 var secretEnc = asynccrypto.Encrypt(secret, publicKey);
-                approvalRequest.SecretEnc = ByteString.CopyFrom(secretEnc);
+                approvalRequest.SecretEncBase64 = Convert.ToBase64String(secretEnc);
 
                 approvalRequest.Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open;
                 approvalRequest.TransferSigningRequestId = requestId;
@@ -124,8 +124,8 @@ namespace KeyKeeperApi.Grpc
                 {
                     Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open,
                     TransferSigningRequestId = requestId + "-1",
-                    TransactionDetailsEnc = ByteString.CopyFrom(message),
-                    SecretEnc = ByteString.CopyFrom(secretEnc)
+                    TransactionDetailsEncBase64 = Convert.ToBase64String(message),
+                    SecretEncBase64 = Convert.ToBase64String(secretEnc)
                 });
             }
 
