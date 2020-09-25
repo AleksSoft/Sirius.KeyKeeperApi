@@ -20,7 +20,30 @@ namespace TestGrpcApp
 
             //TestCreateAprovalRequest();
 
-            TestEncription();
+            //TestEncription();
+
+            TestEncriptionSync();
+        }
+
+        private static void TestEncriptionSync()
+        {
+            var algo = new SymmetricEncryptionService();
+
+            var buf = Encoding.UTF8.GetBytes("Hello world!");
+
+            var key = algo.GenerateKey();
+            
+            var (enc, nonce) = algo.Encrypt(buf, key);
+
+            Console.WriteLine("-------");
+            Console.WriteLine($"key: {Convert.ToBase64String(key)}");
+            Console.WriteLine($"nonce: {Convert.ToBase64String(nonce)}");
+            Console.WriteLine("-------");
+            Console.WriteLine(Convert.ToBase64String(enc));
+
+            var res = algo.Decrypt(enc, key, nonce);
+            Console.WriteLine("-------");
+            Console.WriteLine(Encoding.UTF8.GetString(res));
         }
 
         private static void TestEncription()

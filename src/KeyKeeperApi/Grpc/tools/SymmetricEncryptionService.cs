@@ -22,16 +22,10 @@ namespace KeyKeeperApi.Grpc.tools
             _random = new SecureRandom();
         }
 
-        public string EncryptUtf8ToBase64(string value, byte[] key)
-        {
-            var data = Encoding.UTF8.GetBytes(value);
-
-            var cipheredData = Encrypt(data, key);
-
-            return Convert.ToBase64String(cipheredData);
-        }
-
-        public byte[] Encrypt(byte[] data, byte[] key)
+        /// <summary>
+        /// Encrypt data use key and random nonce. Return encrypted content and nonce (IV) 
+        /// </summary>
+        public (byte[], byte[]) Encrypt(byte[] data, byte[] key)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data), "Data can not be null.");
@@ -48,8 +42,10 @@ namespace KeyKeeperApi.Grpc.tools
             var nonce = new byte[NonceBitSize / 8];
 
             _random.NextBytes(nonce, 0, nonce.Length);
-
+            
             var cipher = new GcmBlockCipher(new AesEngine());
+            Console.WriteLine(cipher.AlgorithmName);
+            //var cipher = new AesEngine();
 
             var parameters = new AeadParameters(new KeyParameter(key), MacBitSize, nonce);
 
@@ -65,39 +61,10 @@ namespace KeyKeeperApi.Grpc.tools
 
             cipher.DoFinal(cipherData, len);
 
-            using (var combinedStream = new MemoryStream())
-            {
-                using (var binaryWriter = new BinaryWriter(combinedStream))
-                {
-                    binaryWriter.Write(nonce);
-                    binaryWriter.Write(cipherData);
-                }
-
-                var encryptedData = combinedStream.ToArray();
-
-                return encryptedData;
-            }
+            return (cipherData, nonce);
         }
 
-        public string DecryptAsString(string value, byte[] key)
-        {
-            var data = Convert.FromBase64String(value);
-
-            var decryptedData = Decrypt(data, key);
-
-            return Encoding.UTF8.GetString(decryptedData);
-        }
-
-        public byte[] Decrypt(string value, byte[] key)
-        {
-            var data = Convert.FromBase64String(value);
-
-            var decryptedData = Decrypt(data, key);
-
-            return decryptedData;
-        }
-
-        public byte[] Decrypt(byte[] data, byte[] key)
+        public byte[] Decrypt(byte[] data, byte[] key, byte[] ivNonce)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data), "Data can not be null.");
@@ -111,38 +78,33 @@ namespace KeyKeeperApi.Grpc.tools
             if (key == null || key.Length != KeyBitSize / 8)
                 throw new ArgumentException($"Key should be {KeyBitSize} bit.", nameof(key));
 
-            using (var cipherStream = new MemoryStream(data))
+            var nonce = ivNonce;
+
+            var cipher = new GcmBlockCipher(new AesEngine());
+
+            var parameters = new AeadParameters(new KeyParameter(key), MacBitSize, nonce);
+            cipher.Init(false, parameters);
+
+            var cipherData = data;
+
+            var decryptedData = new byte[cipher.GetOutputSize(cipherData.Length)];
+
+            try
             {
-                using (var cipherReader = new BinaryReader(cipherStream))
-                {
-                    var nonce = cipherReader.ReadBytes(NonceBitSize / 8);
-
-                    var cipher = new GcmBlockCipher(new AesEngine());
-
-                    var parameters = new AeadParameters(new KeyParameter(key), MacBitSize, nonce);
-                    cipher.Init(false, parameters);
-
-                    var cipherData = cipherReader.ReadBytes(data.Length - nonce.Length);
-
-                    var decryptedData = new byte[cipher.GetOutputSize(cipherData.Length)];
-
-                    try
-                    {
-                        var len = cipher.ProcessBytes(cipherData,
-                            0,
-                            cipherData.Length,
-                            decryptedData,
-                            0);
-                        cipher.DoFinal(decryptedData, len);
-                    }
-                    catch (InvalidCipherTextException)
-                    {
-                        return null;
-                    }
-
-                    return decryptedData;
-                }
+                var len = cipher.ProcessBytes(cipherData,
+                    0,
+                    cipherData.Length,
+                    decryptedData,
+                    0);
+                cipher.DoFinal(decryptedData, len);
             }
+            catch (InvalidCipherTextException)
+            {
+                return null;
+            }
+
+            return decryptedData;
+             
         }
 
         public byte[] GenerateKey()

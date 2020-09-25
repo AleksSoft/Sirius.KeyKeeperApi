@@ -108,12 +108,14 @@ namespace KeyKeeperApi.Grpc
 
                 var symcrypto = new SymmetricEncryptionService();
                 var secret = symcrypto.GenerateKey();
-                var message = symcrypto.Encrypt(Encoding.UTF8.GetBytes(json), secret);
+                var (message, nonce) = symcrypto.Encrypt(Encoding.UTF8.GetBytes(json), secret);
                 approvalRequest.TransactionDetailsEncBase64 = Convert.ToBase64String(message);
 
                 var asynccrypto = new AsymmetricEncryptionService();
                 var secretEnc = asynccrypto.Encrypt(secret, publicKey);
                 approvalRequest.SecretEncBase64 = Convert.ToBase64String(secretEnc);
+
+                approvalRequest.IvNonce = Convert.ToBase64String(nonce);
 
                 approvalRequest.Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open;
                 approvalRequest.TransferSigningRequestId = requestId;
@@ -125,7 +127,8 @@ namespace KeyKeeperApi.Grpc
                     Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open,
                     TransferSigningRequestId = requestId + "-1",
                     TransactionDetailsEncBase64 = Convert.ToBase64String(message),
-                    SecretEncBase64 = Convert.ToBase64String(secretEnc)
+                    SecretEncBase64 = Convert.ToBase64String(secretEnc),
+                    IvNonce = Convert.ToBase64String(nonce)
                 });
             }
 
