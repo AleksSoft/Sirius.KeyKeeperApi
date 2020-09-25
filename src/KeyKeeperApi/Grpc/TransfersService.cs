@@ -49,8 +49,9 @@ namespace KeyKeeperApi.Grpc
                 {
                     TransferSigningRequestId = entity.TransferSigningRequestId,
                     Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open,
-                    TransactionDetailsEncBase64 = Convert.ToBase64String(entity.MessageEnc),
-                    SecretEncBase64 = Convert.ToBase64String(entity.SecretEnc)
+                    TransactionDetailsEncBase64 = entity.MessageEnc,
+                    SecretEncBase64 = entity.SecretEnc,
+                    IvNonce = entity.IvNonce
                 };
                 res.Payload.Add(item);
             }

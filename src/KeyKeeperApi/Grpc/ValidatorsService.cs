@@ -33,8 +33,9 @@ namespace KeyKeeperApi.Grpc
             {
                 var entity = ApprovalRequestMyNoSqlEntity.Generate(validatorRequest.ValidaditorId, request.TransferSigningRequestId);
                 entity.TenantId = tenantId;
-                entity.MessageEnc = validatorRequest.MessageEnc.ToByteArray();
-                entity.SecretEnc = validatorRequest.SecretEnc.ToByteArray();
+                entity.MessageEnc = validatorRequest.TransactionDetailsEncBase64;
+                entity.SecretEnc = validatorRequest.SecretEncBase64;
+                entity.IvNonce = validatorRequest.IvNonce;
                 entity.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Empty;
                 entity.VaultId = vaultId;
 

@@ -24,8 +24,9 @@ message CreateApprovalRequestRequest {
     message ValidatorRequest {
 
         string validaditorId = 1;
-        bytes secretEnc = 2;
-        bytes messageEnc = 3;
+        string transactionDetailsEncBase64 = 2; // json with transaction details encrupted by AES algorithm with 'Secret' as key and IV as nonce. Formar: base64
+        string secretEncBase64 = 3; // Secret used for encrypt transaction detail. Secret encrypted by RSA algorithm with validator public key. Formar: base64
+        string ivNonce = 4; // IV used for encrypt transaction detail. Formar: base64
 
     }
 }

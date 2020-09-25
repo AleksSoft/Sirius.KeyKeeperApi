@@ -5,15 +5,17 @@ namespace KeyKeeperApi.MyNoSql
 {
     public class ApprovalRequestMyNoSqlEntity : IMyNoSqlDbEntity
     {
-        public static string TableName = "validator-approval-request";
+        public static string TableName = "validator-approval-request-2";
 
         public string ValidatorId { get; set; }
 
         public string TransferSigningRequestId { get; set; }
 
-        public byte[] SecretEnc { get; set; }
+        public string SecretEnc { get; set; }
 
-        public byte[] MessageEnc { get; set; }
+        public string MessageEnc { get; set; }
+
+        public string IvNonce { get; set; }
 
         public ResolutionType Resolution { get; set; }
 
