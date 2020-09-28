@@ -72,6 +72,7 @@ namespace KeyKeeperApi.Grpc
                         AssetId = string.Empty,
                         Symbol = _rnd.Next(10) > 5 ? "BTC" : "ETH"
                     },
+                    BlockchainProtocolId = "protocol-id",
                     NetworkType = _rnd.Next(10) > 5 ? "mainnet" : "testnet",
                     BlockchainId = string.Empty,
                     Source = new TransactionDetails.AddressData()
@@ -163,6 +164,7 @@ namespace KeyKeeperApi.Grpc
         {
             public string OperationId { get; set; }
             public string BlockchainId { get; set; }
+            public string BlockchainProtocolId { get; set; }
             public string NetworkType { get; set; }
             public AssetModel Asset { get; set; }
             public AddressData Source { get; set; }
