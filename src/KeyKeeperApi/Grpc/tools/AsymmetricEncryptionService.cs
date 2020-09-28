@@ -72,7 +72,7 @@ namespace KeyKeeperApi.Grpc.tools
             }
         }
 
-        public bool VerifySignature(byte[] data, string publicKey)
+        public bool VerifySignature(byte[] data, byte[] signature, string publicKey)
         {
             AsymmetricKeyParameter publicKeyParameters;
 
@@ -84,7 +84,8 @@ namespace KeyKeeperApi.Grpc.tools
 
             var signer = SignerUtilities.GetSigner("SHA256WITHRSA");
             signer.Init(false, publicKeyParameters);
-            var verifyResult = signer.VerifySignature(data);
+            signer.BlockUpdate(data, 0, data.Length);
+            var verifyResult = signer.VerifySignature(signature);
             return verifyResult;
         }
 

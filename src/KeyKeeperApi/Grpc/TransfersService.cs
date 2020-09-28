@@ -198,7 +198,7 @@ namespace KeyKeeperApi.Grpc
                     if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
                     {
                         var algo = new AsymmetricEncryptionService();
-                        var verify = algo.VerifySignature(data, publicKey);
+                        var verify = algo.VerifySignature(data, Convert.FromBase64String(request.Signature), publicKey);
                         Console.WriteLine($"Signature verification result: {verify.ToString().ToUpper()}");
                     }
                 }

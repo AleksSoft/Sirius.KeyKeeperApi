@@ -22,7 +22,34 @@ namespace TestGrpcApp
 
             //TestEncription();
 
-            TestEncriptionSync();
+            //TestEncriptionSync();
+
+            TestSignature();
+        }
+
+        private static void TestSignature()
+        {
+            var readerPrivate = new StreamReader("private-key-test.txt");
+            var readerPublic = new StreamReader("public-key-test.txt");
+
+            var privateStr = readerPrivate.ReadToEnd();
+            var publicStr = readerPublic.ReadToEnd();
+
+
+            var data64 = "eyJUcmFuc2ZlckRldGFpbCI6eyJCbG9ja2NoYWluUHJvdG9jb2xJZCI6InByb3RvY29sLWlkIiwiT3BlcmF0aW9uSWQiOiJjNWY4OWE4NTI3MTE0N2M5YTBhYjFiYTZkY2FhZTVmYyIsIkJsb2NrY2hhaW5JZCI6IkV0aGVyZXVtIiwiTmV0d29ya1R5cGUiOiJ0ZXN0bmV0IiwiQXNzZXQiOnsiU3ltYm9sIjoiRVRIIiwiQXNzZXRBZGRyZXNzIjoiIiwiQXNzZXRJZCI6IiJ9LCJTb3VyY2UiOnsiQWRkcmVzcyI6ImZlNDM3ZWRiMTMyZDQ3YmE4ODdjMmM1ZWFjMzY5ZDRmIiwiQWRkcmVzc0dyb3VwIjoiQnJva2VyIEFjY291bnQgIzEiLCJOYW1lIjoiIiwiVGFnIjoiIiwiVGFnVHlwZSI6IiJ9LCJEZXN0aW5hdGlvbiI6eyJBZGRyZXNzIjoiMjU2NDI2NzJjZDdhNDQxMTk3M2ZkZTkxMjNiYTk1OWEiLCJBZGRyZXNzR3JvdXAiOiIiLCJOYW1lIjoiIiwiVGFnIjoiIiwiVGFnVHlwZSI6IiJ9LCJBbW91bnQiOiIxIiwiRmVlTGltaXQiOiIwLjAwMSIsIkNsaWVudENvbnRleHQiOnsiV2l0aGRyYXdhbFJlZmVyZW5jZUlkIjoiYWNjb3VudC03NDkyMTciLCJBY2NvdW50UmVmZXJlbmNlSWQiOiIxMjkxMSIsIlRpbWVzdGFtcCI6IjI4LjA5LjIwIDE0OjEzOjEwIiwiVXNlcklkIjoiIiwiQXBpS2V5SWQiOiJBcGkga2V5ICMzIiwiSVAiOiIxNzIuMTY0LjIwLjIifX0sIlJlc29sdXRpb24iOiJhcHByb3ZlIiwiUmVzb2x1dGlvbk1lc3NhZ2UiOiJhc2RmYXNkZiJ9";
+            var data = Convert.FromBase64String(data64);
+
+
+            var sign = Convert.FromBase64String("Kf5iSGE44iSX+UMp7lz3bYaYHE5Rpwav/wztVJHQ2E6pjNYt/muXumL7I/dyzBpWkJIGsvnrkOGMB2LiRf+M30CCWKtlZ8U0upSGz1kvlwEDP8dbpo74wcByKQy9h73dJtCuVeFbxZ/PixVUUg3IfNKfM7uExhSIIlNa4AU38Hg=");
+
+            var algo = new AsymmetricEncryptionService();
+
+            var verfy = algo.VerifySignature(data, sign,  publicStr);
+
+            Console.WriteLine(verfy);
+
+            Console.ReadLine();
+
         }
 
         private static void TestEncriptionSync()
