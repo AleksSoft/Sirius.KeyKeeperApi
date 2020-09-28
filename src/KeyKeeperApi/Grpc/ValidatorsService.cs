@@ -27,7 +27,7 @@ namespace KeyKeeperApi.Grpc
         public override async Task<CreateApprovalRequestResponse> CreateApprovalRequest(CreateApprovalRequestRequest request, ServerCallContext context)
         {
             var tenantId = context.GetTenantId();
-            var vaultId = context.GetVaultId()?.ToString();
+            var vaultId = context.GetVaultId();
 
             foreach (var validatorRequest in request.ValidatorRequests)
             {
@@ -36,7 +36,7 @@ namespace KeyKeeperApi.Grpc
                 entity.MessageEnc = validatorRequest.TransactionDetailsEncBase64;
                 entity.SecretEnc = validatorRequest.SecretEncBase64;
                 entity.IvNonce = validatorRequest.IvNonce;
-                entity.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Empty;
+                entity.IsOpen = true;
                 entity.VaultId = vaultId;
 
                 await _dataWriter.InsertOrReplaceAsync(entity);
@@ -56,7 +56,7 @@ namespace KeyKeeperApi.Grpc
 
             var list = _dataReader.Get()
                 .Where(e => e.TenantId == tenantId && e.VaultId == vaultId)
-                .Where(e => e.Resolution != ApprovalRequestMyNoSqlEntity.ResolutionType.Empty)
+                .Where(e => !e.IsOpen)
                 .ToList();
 
             var resp = new GetApprovalResponse();
@@ -67,40 +67,14 @@ namespace KeyKeeperApi.Grpc
                 {
                     ValidatorId = entity.ValidatorId,
                     TransferSigningRequestId = entity.TransferSigningRequestId,
-                    ResolutionMessage = entity.ResolutionMessage,
+                    ResolutionDocumentEncBase64 = entity.ResolutionDocumentEncBase64,
                     Signature = entity.ResolutionSignature
                 };
-
-                switch (entity.Resolution)
-                {
-                    case ApprovalRequestMyNoSqlEntity.ResolutionType.Approve:
-                        item.Resolution = GetApprovalResponse.Types.ResolutionStatus.Approve;
-                        break;
-                    case ApprovalRequestMyNoSqlEntity.ResolutionType.Reject:
-                        item.Resolution = GetApprovalResponse.Types.ResolutionStatus.Reject;
-                        break;
-                    case ApprovalRequestMyNoSqlEntity.ResolutionType.Skip:
-                        item.Resolution = GetApprovalResponse.Types.ResolutionStatus.Skip;
-                        break;
-
-                    default:
-                        continue;
-                }
                 
                 resp.Payload.Add(item);
             }
 
             return Task.FromResult(resp);
-        }
-
-        public async Task<AcknowledgeResultResponse> AcknowledgeResult1(AcknowledgeResultRequest request, ServerCallContext context)
-        {
-            var tenantId = context.GetTenantId();
-
-            await _dataWriter.DeleteAsync(ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(request.ValidatorId),
-                ApprovalRequestMyNoSqlEntity.GenerateRowKey(request.TransferSigningRequestId));
-
-            return new AcknowledgeResultResponse();
         }
 
         public override async Task<AcknowledgeResultResponse> AcknowledgeResult(AcknowledgeResultRequest request, ServerCallContext context)

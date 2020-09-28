@@ -40,7 +40,7 @@ namespace KeyKeeperApi.Grpc
             var res = new GetApprovalRequestsResponse();
 
             var requests = _approvalRequestReader.Get(ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(validatorId))
-                .Where(r => r.Resolution == ApprovalRequestMyNoSqlEntity.ResolutionType.Empty);
+                .Where(r => r.IsOpen);
             //todo: add filter by tenant from API key, need to add tenant into api key
 
             foreach (var entity in requests)
@@ -144,26 +144,14 @@ namespace KeyKeeperApi.Grpc
                     ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(validatorId),
                     ApprovalRequestMyNoSqlEntity.GenerateRowKey(request.TransferSigningRequestId));
 
-            if (approvalRequest == null || approvalRequest.Resolution != ApprovalRequestMyNoSqlEntity.ResolutionType.Empty)
+            if (approvalRequest == null || !approvalRequest.IsOpen)
             {
                 return new ResolveApprovalRequestsResponse();
             }
 
-            switch (request.Resolution)
-            {
-                case ResolveApprovalRequestsRequest.Types.ResolutionStatus.Approve:
-                    approvalRequest.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Approve;
-                    break;
-                case ResolveApprovalRequestsRequest.Types.ResolutionStatus.Reject:
-                    approvalRequest.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Reject;
-                    break;
-                case ResolveApprovalRequestsRequest.Types.ResolutionStatus.Skip:
-                    approvalRequest.Resolution = ApprovalRequestMyNoSqlEntity.ResolutionType.Skip;
-                    break;
-            }
-
-            approvalRequest.ResolutionMessage = request.ResolutionMessage;
+            approvalRequest.ResolutionDocumentEncBase64 = request.ResolutionDocumentEncBase64;
             approvalRequest.ResolutionSignature = request.Signature;
+            approvalRequest.IsOpen = false;
 
             await _approvalRequestWriter.InsertOrReplaceAsync(approvalRequest);
             

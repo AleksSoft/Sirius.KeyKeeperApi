@@ -5,7 +5,7 @@ namespace KeyKeeperApi.MyNoSql
 {
     public class ApprovalRequestMyNoSqlEntity : IMyNoSqlDbEntity
     {
-        public static string TableName = "validator-approval-request-2";
+        public static string TableName = "validator-approval-request-3";
 
         public string ValidatorId { get; set; }
 
@@ -17,15 +17,15 @@ namespace KeyKeeperApi.MyNoSql
 
         public string IvNonce { get; set; }
 
-        public ResolutionType Resolution { get; set; }
-
-        public string ResolutionMessage { get; set; }
+        public string ResolutionDocumentEncBase64 { get; set; }
 
         public string ResolutionSignature { get; set; }
 
         public string VaultId { get; set; }
 
         public string TenantId { get; set; }
+
+        public  bool IsOpen { get; set; }
 
 
         public static ApprovalRequestMyNoSqlEntity Generate(string validatorId, string transferSigningRequestId)
@@ -35,7 +35,8 @@ namespace KeyKeeperApi.MyNoSql
                 PartitionKey = GeneratePartitionKey(validatorId),
                 RowKey = GenerateRowKey(transferSigningRequestId),
                 TransferSigningRequestId = transferSigningRequestId,
-                ValidatorId = validatorId
+                ValidatorId = validatorId,
+                IsOpen = true
             };
             return entity;
         }

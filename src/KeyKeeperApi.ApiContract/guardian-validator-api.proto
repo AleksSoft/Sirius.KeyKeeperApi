@@ -51,9 +51,8 @@ message GetApprovalResponse {
 
         string validatorId = 1; // Id of validator. ID = PublicKeyBytes.Sha256().ToBase64()
         string transferSigningRequestId = 2; // Id of transaction verification process
-        ResolutionStatus resolution = 3; // resolution from validator
-        string resolutionMessage = 4; // validator message
-        string signature = 5; // signature from validator private key (TransferSigningRequestId, Resolution, ResolutionMessage, TransactionDetail) encoded in base64
+        string resolutionDocumentEncBase64 = 3; // Document with transactionDetail, resolution and resolution message.string Document encrupted by AES algorithm with 'Secret' as key and IV from ValidatorRequest.
+        string signature = 4; // signature from validator private key (TransferSigningRequestId, Resolution, ResolutionMessage, TransactionDetail) encoded in base64
 
     }
 

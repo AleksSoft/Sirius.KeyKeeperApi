@@ -67,11 +67,9 @@ message ResolveApprovalRequestsRequest {
 
     string TransferSigningRequestId = 2; // ID of the transfer process to be approved
 
-    ResolutionStatus resolution = 3; // resolution from validator
+    string resolutionDocumentEncBase64 = 3; // Document with transactionDetail, resolution and resolution message.string Document encrupted by AES algorithm with 'Secret' as key and IV from ApprovalRequest.
 
-    string resolutionMessage = 4; // optional message from validator
-
-    string signature = 5; // signature from validator private key (TransferSigningRequestId, Resolution, ResolutionMessage, TransactionDetail) encoded in base64
+    string signature = 4; // signature for resolutionDocument from validator private key encoded in base64
     
 }
 
