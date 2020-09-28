@@ -160,38 +160,50 @@ namespace KeyKeeperApi.Grpc
         {
             var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
 
+            Console.WriteLine($"===============================");
+            Console.WriteLine("Receive ResolveApprovalRequests:");
+            Console.WriteLine($"{DateTime.UtcNow:s}");
+            Console.WriteLine($"validatorId: {validatorId}");
+            Console.WriteLine($"DeviceInfo: {request.DeviceInfo}");
+            Console.WriteLine($"TransferSigningRequestId: {request.TransferSigningRequestId}");
+            Console.WriteLine($"Signature: {request.Signature}");
+            Console.WriteLine($"ResolutionDocumentEncBase64: {request.ResolutionDocumentEncBase64}");
+            Console.WriteLine($"-------------------------------");
+
+            if (request.TransferSigningRequestId.Contains("-fake-"))
+            {
+                Console.WriteLine($"detect fake ID");
+                var strIndex = request.TransferSigningRequestId.Last();
+                if (int.TryParse($"{strIndex}", out var index) && index >= 0 && index <= 9)
+                {
+                    Console.WriteLine($"detect ID = {index}");
+                    var secret = _fakeRequestSecretAndNonce[$"-fake-{index}"].Key;
+                    var nonce = _fakeRequestSecretAndNonce[$"-fake-{index}"].Value;
+
+                    var dataEnc = Convert.FromBase64String(request.ResolutionDocumentEncBase64);
+                    var symcrypto = new SymmetricEncryptionService();
+                    var data = symcrypto.Decrypt(dataEnc, secret, nonce);
+
+                    var json = Encoding.UTF8.GetString(data);
+                    Console.WriteLine($"Receive Resolution: {request.TransferSigningRequestId} from {validatorId}");
+                    Console.WriteLine(json);
+
+                    if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
+                    {
+                        var algo = new AsymmetricEncryptionService();
+                        var verify = algo.VerifySignature(data, publicKey);
+                        Console.WriteLine($"Signature verification result: {verify.ToString().ToUpper()}");
+                    }
+                }
+            }
+
+
             var approvalRequest = _approvalRequestReader.Get(
                     ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(validatorId),
                     ApprovalRequestMyNoSqlEntity.GenerateRowKey(request.TransferSigningRequestId));
 
             if (approvalRequest == null || !approvalRequest.IsOpen)
             {
-
-                if (request.TransferSigningRequestId.Contains("-fake-"))
-                {
-                    var strIndex = request.TransferSigningRequestId.Last();
-                    if (int.TryParse($"{strIndex}", out var index) && index >= 0 && index <= 9)
-                    {
-                        var secret = _fakeRequestSecretAndNonce[$"-fake-{index}"].Key;
-                        var nonce = _fakeRequestSecretAndNonce[$"-fake-{index}"].Value;
-
-                        var dataEnc = Convert.FromBase64String(request.ResolutionDocumentEncBase64);
-                        var symcrypto = new SymmetricEncryptionService();
-                        var data = symcrypto.Decrypt(dataEnc, secret, nonce);
-
-                        var json = Encoding.UTF8.GetString(data);
-                        Console.WriteLine($"Receive Resolution: {request.TransferSigningRequestId} from {validatorId}");
-                        Console.WriteLine(json);
-
-                        if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
-                        {
-                            var algo = new AsymmetricEncryptionService();
-                            var verify = algo.VerifySignature(data, publicKey);
-                            Console.WriteLine($"Signature verification result: {verify.ToString().ToUpper()}");
-                        }
-                    }
-                }
-
                 return new ResolveApprovalRequestsResponse();
             }
 
