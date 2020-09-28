@@ -32,8 +32,9 @@ namespace TestGrpcApp
             var buf = Encoding.UTF8.GetBytes("Hello world!");
 
             var key = algo.GenerateKey();
+            var nonce = algo.GenerateNonce();
             
-            var (enc, nonce) = algo.Encrypt(buf, key);
+            var enc = algo.Encrypt(buf, key, nonce);
 
             Console.WriteLine("-------");
             Console.WriteLine($"key: {Convert.ToBase64String(key)}");
