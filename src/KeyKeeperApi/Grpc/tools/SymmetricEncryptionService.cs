@@ -94,8 +94,10 @@ namespace KeyKeeperApi.Grpc.tools
                     0);
                 cipher.DoFinal(decryptedData, len);
             }
-            catch (InvalidCipherTextException)
+            catch (InvalidCipherTextException ex)
             {
+                Console.WriteLine("InvalidCipherTextException:");
+                Console.WriteLine(ex);
                 return null;
             }
 

@@ -24,13 +24,8 @@ namespace KeyKeeperApi.Grpc
         private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _approvalRequestReader;
         private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _approvalRequestWriter;
 
-        public TransfersService(TestKeys testPubKeys, IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> approvalRequestReader,
-            IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> approvalRequestWriter)
+        static TransfersService()
         {
-            _testPubKeys = testPubKeys;
-            _approvalRequestReader = approvalRequestReader;
-            _approvalRequestWriter = approvalRequestWriter;
-
             var algo = new SymmetricEncryptionService();
             _fakeRequestSecretAndNonce["-fake-0"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
             _fakeRequestSecretAndNonce["-fake-1"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
@@ -44,8 +39,16 @@ namespace KeyKeeperApi.Grpc
             _fakeRequestSecretAndNonce["-fake-9"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
         }
 
+        public TransfersService(TestKeys testPubKeys, IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> approvalRequestReader,
+            IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> approvalRequestWriter)
+        {
+            _testPubKeys = testPubKeys;
+            _approvalRequestReader = approvalRequestReader;
+            _approvalRequestWriter = approvalRequestWriter;
+        }
+
         private static Random _rnd = new Random();
-        private Dictionary<string, KeyValuePair<byte[], byte[]>> _fakeRequestSecretAndNonce = new Dictionary<string, KeyValuePair<byte[], byte[]>>();
+        private static Dictionary<string, KeyValuePair<byte[], byte[]>> _fakeRequestSecretAndNonce = new Dictionary<string, KeyValuePair<byte[], byte[]>>();
 
         public override Task<GetApprovalRequestsResponse> GetApprovalRequests(GetApprovalRequestsRequests request, ServerCallContext context)
         {
@@ -179,6 +182,10 @@ namespace KeyKeeperApi.Grpc
                     Console.WriteLine($"detect ID = {index}");
                     var secret = _fakeRequestSecretAndNonce[$"-fake-{index}"].Key;
                     var nonce = _fakeRequestSecretAndNonce[$"-fake-{index}"].Value;
+
+                    Console.WriteLine($"Secret: {Convert.ToBase64String(secret)}");
+                    Console.WriteLine($"Nonce: {Convert.ToBase64String(nonce)}");
+
 
                     var dataEnc = Convert.FromBase64String(request.ResolutionDocumentEncBase64);
                     var symcrypto = new SymmetricEncryptionService();
