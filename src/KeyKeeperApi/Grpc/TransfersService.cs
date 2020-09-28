@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,9 +30,22 @@ namespace KeyKeeperApi.Grpc
             _testPubKeys = testPubKeys;
             _approvalRequestReader = approvalRequestReader;
             _approvalRequestWriter = approvalRequestWriter;
+
+            var algo = new SymmetricEncryptionService();
+            _fakeRequestSecretAndNonce["-fake-0"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-1"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-2"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-3"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-4"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-5"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-6"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-7"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-8"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
+            _fakeRequestSecretAndNonce["-fake-9"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
         }
 
         private static Random _rnd = new Random();
+        private Dictionary<string, KeyValuePair<byte[], byte[]>> _fakeRequestSecretAndNonce = new Dictionary<string, KeyValuePair<byte[], byte[]>>();
 
         public override Task<GetApprovalRequestsResponse> GetApprovalRequests(GetApprovalRequestsRequests request, ServerCallContext context)
         {
@@ -61,7 +75,7 @@ namespace KeyKeeperApi.Grpc
             if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
             {
 
-                var requestId = Guid.NewGuid().ToString("N");
+                
                 var transaction = new TransactionDetails()
                 {
                     OperationId = Guid.NewGuid().ToString("N"),
@@ -108,9 +122,14 @@ namespace KeyKeeperApi.Grpc
 
                 var approvalRequest = new GetApprovalRequestsResponse.Types.ApprovalRequest();
 
+                var index = _rnd.Next(9);
+                var secret = _fakeRequestSecretAndNonce[$"-fake-{index}"].Key;
+                var nonce = _fakeRequestSecretAndNonce[$"-fake-{index}"].Value;
+                var requestId = $"{Guid.NewGuid():N}-fake-{index}";
+
                 var symcrypto = new SymmetricEncryptionService();
-                var secret = symcrypto.GenerateKey();
-                var (message, nonce) = symcrypto.Encrypt(Encoding.UTF8.GetBytes(json), secret);
+                
+                var message = symcrypto.Encrypt(Encoding.UTF8.GetBytes(json), secret, nonce);
                 approvalRequest.TransactionDetailsEncBase64 = Convert.ToBase64String(message);
 
                 var asynccrypto = new AsymmetricEncryptionService();
@@ -127,7 +146,7 @@ namespace KeyKeeperApi.Grpc
                 res.Payload.Add(new GetApprovalRequestsResponse.Types.ApprovalRequest()
                 {
                     Status = GetApprovalRequestsResponse.Types.ApprovalRequest.Types.RequestStatus.Open,
-                    TransferSigningRequestId = requestId + "-1",
+                    TransferSigningRequestId = "1-" + requestId,
                     TransactionDetailsEncBase64 = Convert.ToBase64String(message),
                     SecretEncBase64 = Convert.ToBase64String(secretEnc),
                     IvNonce = Convert.ToBase64String(nonce)
@@ -147,6 +166,32 @@ namespace KeyKeeperApi.Grpc
 
             if (approvalRequest == null || !approvalRequest.IsOpen)
             {
+
+                if (request.TransferSigningRequestId.Contains("-fake-"))
+                {
+                    var strIndex = request.TransferSigningRequestId.Last();
+                    if (int.TryParse($"{strIndex}", out var index) && index >= 0 && index <= 9)
+                    {
+                        var secret = _fakeRequestSecretAndNonce[$"-fake-{index}"].Key;
+                        var nonce = _fakeRequestSecretAndNonce[$"-fake-{index}"].Value;
+
+                        var dataEnc = Convert.FromBase64String(request.ResolutionDocumentEncBase64);
+                        var symcrypto = new SymmetricEncryptionService();
+                        var data = symcrypto.Decrypt(dataEnc, secret, nonce);
+
+                        var json = Encoding.UTF8.GetString(data);
+                        Console.WriteLine($"Receive Resolution: {request.TransferSigningRequestId} from {validatorId}");
+                        Console.WriteLine(json);
+
+                        if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
+                        {
+                            var algo = new AsymmetricEncryptionService();
+                            var verify = algo.VerifySignature(data, publicKey);
+                            Console.WriteLine($"Signature verification result: {verify.ToString().ToUpper()}");
+                        }
+                    }
+                }
+
                 return new ResolveApprovalRequestsResponse();
             }
 

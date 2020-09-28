@@ -72,6 +72,41 @@ namespace KeyKeeperApi.Grpc.tools
             }
         }
 
+        public bool VerifySignature(byte[] data, string publicKey)
+        {
+            AsymmetricKeyParameter publicKeyParameters;
+
+            using (var reader = new StringReader(publicKey))
+            {
+                var pemReader = new PemReader(reader);
+                publicKeyParameters = (AsymmetricKeyParameter)pemReader.ReadObject();
+            }
+
+            var signer = SignerUtilities.GetSigner("SHA256WITHRSA");
+            signer.Init(false, publicKeyParameters);
+            var verifyResult = signer.VerifySignature(data);
+            return verifyResult;
+        }
+
+        public byte[] GenerateSignature(byte[] data, string privateKey)
+        {
+            using (var reader = new StringReader(privateKey))
+            {
+                // https://stackoverflow.com/a/60423034
+                var pemReader = new Org.BouncyCastle.Utilities.IO.Pem.PemReader(reader);
+                var pem = pemReader.ReadPemObject();
+
+                AsymmetricKeyParameter pk = PrivateKeyFactory.CreateKey(pem.Content);
+
+                var signer = SignerUtilities.GetSigner("SHA256WITHRSA");
+                signer.Init(true, pk);
+                signer.BlockUpdate(data, 0, data.Length);
+
+                var signature = signer.GenerateSignature();
+                return signature;
+            }
+        }
+
         public Tuple<string, string> GenerateKeyPairPem()
         {
             var keyPairGenerator = new RsaKeyPairGenerator();

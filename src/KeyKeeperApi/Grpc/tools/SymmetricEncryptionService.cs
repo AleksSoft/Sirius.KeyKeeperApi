@@ -25,7 +25,7 @@ namespace KeyKeeperApi.Grpc.tools
         /// <summary>
         /// Encrypt data use key and random nonce. Return encrypted content and nonce (IV) 
         /// </summary>
-        public (byte[], byte[]) Encrypt(byte[] data, byte[] key)
+        public byte[] Encrypt(byte[] data, byte[] key, byte[] nonce)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data), "Data can not be null.");
@@ -38,11 +38,7 @@ namespace KeyKeeperApi.Grpc.tools
 
             if (key == null || key.Length != KeyBitSize / 8)
                 throw new ArgumentException($"Key needs to be {KeyBitSize} bit!", nameof(key));
-
-            var nonce = new byte[NonceBitSize / 8];
-
-            _random.NextBytes(nonce, 0, nonce.Length);
-            
+           
             var cipher = new GcmBlockCipher(new AesEngine());
             Console.WriteLine(cipher.AlgorithmName);
             //var cipher = new AesEngine();
@@ -61,7 +57,7 @@ namespace KeyKeeperApi.Grpc.tools
 
             cipher.DoFinal(cipherData, len);
 
-            return (cipherData, nonce);
+            return cipherData;
         }
 
         public byte[] Decrypt(byte[] data, byte[] key, byte[] ivNonce)
@@ -113,6 +109,15 @@ namespace KeyKeeperApi.Grpc.tools
             _random.NextBytes(key);
             key[^1] &= 0x7F;
             return key;
+        }
+
+        public byte[] GenerateNonce()
+        {
+            var nonce = new byte[NonceBitSize / 8];
+
+            _random.NextBytes(nonce, 0, nonce.Length);
+
+            return nonce;
         }
     }
 }
