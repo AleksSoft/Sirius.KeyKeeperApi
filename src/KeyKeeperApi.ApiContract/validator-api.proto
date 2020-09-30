@@ -87,7 +87,9 @@ message AcceptRequest {
 
     string inviteId = 2; // invitation token
 
-    string validatorId = 3; // Id of validator. ID = PublicKeyBytes.Sha256().ToBase64()
+    string validatorId = 3; // Id of validator. ID = PublicKey.ToPem.Sha256().ToBase64()
+
+    string publicKeyPem = 4; // Validator public key in pem format
 
 }
 
