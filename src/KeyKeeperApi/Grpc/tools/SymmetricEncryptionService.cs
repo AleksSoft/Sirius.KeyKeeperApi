@@ -4,6 +4,7 @@ using System.Text;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Paddings;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 
@@ -38,14 +39,10 @@ namespace KeyKeeperApi.Grpc.tools
 
             if (key == null || key.Length != KeyBitSize / 8)
                 throw new ArgumentException($"Key needs to be {KeyBitSize} bit!", nameof(key));
-           
-            var cipher = new GcmBlockCipher(new AesEngine());
-            Console.WriteLine(cipher.AlgorithmName);
-            //var cipher = new AesEngine();
 
-            var parameters = new AeadParameters(new KeyParameter(key), MacBitSize, nonce);
-
-            cipher.Init(true, parameters);
+            var cipher = new PaddedBufferedBlockCipher(new CbcBlockCipher(new AesEngine()), new Pkcs7Padding());
+            //Console.WriteLine(cipher.AlgorithmName);
+            cipher.Init(true, new ParametersWithIV(new KeyParameter(key), nonce, 0, 16));
 
             var cipherData = new byte[cipher.GetOutputSize(data.Length)];
 
@@ -76,10 +73,9 @@ namespace KeyKeeperApi.Grpc.tools
 
             var nonce = ivNonce;
 
-            var cipher = new GcmBlockCipher(new AesEngine());
 
-            var parameters = new AeadParameters(new KeyParameter(key), MacBitSize, nonce);
-            cipher.Init(false, parameters);
+            var cipher = new PaddedBufferedBlockCipher(new CbcBlockCipher(new AesEngine()), new Pkcs7Padding());
+            cipher.Init(true, new ParametersWithIV(new KeyParameter(key), nonce));
 
             var cipherData = data;
 
