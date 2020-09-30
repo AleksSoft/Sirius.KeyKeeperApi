@@ -20,7 +20,6 @@ namespace KeyKeeperApi.Grpc
     [Authorize]
     public class TransfersService : Transfers.TransfersBase
     {
-        private readonly TestKeys _testPubKeys;
         private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _approvalRequestReader;
         private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _approvalRequestWriter;
 
@@ -39,10 +38,9 @@ namespace KeyKeeperApi.Grpc
             _fakeRequestSecretAndNonce["-fake-9"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
         }
 
-        public TransfersService(TestKeys testPubKeys, IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> approvalRequestReader,
+        public TransfersService(IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> approvalRequestReader,
             IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> approvalRequestWriter)
         {
-            _testPubKeys = testPubKeys;
             _approvalRequestReader = approvalRequestReader;
             _approvalRequestWriter = approvalRequestWriter;
         }
@@ -75,7 +73,8 @@ namespace KeyKeeperApi.Grpc
 
             // add fake data to test
 
-            if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
+            var publicKey = context.GetHttpContext().User.GetClaimOrDefault(Claims.PublicKeyPem);
+            if (!string.IsNullOrEmpty(publicKey))
             {
 
                 
@@ -195,7 +194,8 @@ namespace KeyKeeperApi.Grpc
                     Console.WriteLine($"Receive Resolution: {request.TransferSigningRequestId} from {validatorId}");
                     Console.WriteLine(json);
 
-                    if (_testPubKeys.TryGetValue(validatorId, out var publicKey))
+                    var publicKey = context.GetHttpContext().User.GetClaimOrDefault(Claims.PublicKeyPem);
+                    if (!string.IsNullOrEmpty(publicKey))
                     {
                         var algo = new AsymmetricEncryptionService();
                         var verify = algo.VerifySignature(data, Convert.FromBase64String(request.Signature), publicKey);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,8 +10,10 @@ using Grpc.Core;
 using KeyKeeperApi.Common.Configuration;
 using KeyKeeperApi.Consts;
 using KeyKeeperApi.Grpc.tools;
+using KeyKeeperApi.MyNoSql;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using MyNoSqlServer.Abstractions;
 using Swisschain.Sdk.Server.Authorization;
 using Swisschain.Sirius.ValidatorApi;
 
@@ -19,49 +22,75 @@ namespace KeyKeeperApi.Grpc
     public class InvitesService : Invites.InvitesBase
     {
         private readonly AuthConfig _authConfig;
+        private readonly IMyNoSqlServerDataReader<ValidatorLinkEntity> _validatorLinkReader;
+        private readonly IMyNoSqlServerDataWriter<ValidatorLinkEntity> _validatorLinkWriter;
 
-        public InvitesService(AuthConfig authConfig)
+        public InvitesService(AuthConfig authConfig, IMyNoSqlServerDataReader<ValidatorLinkEntity> validatorLinkReader,
+            IMyNoSqlServerDataWriter<ValidatorLinkEntity> validatorLinkWriter)
         {
             _authConfig = authConfig;
+            _validatorLinkReader = validatorLinkReader;
+            _validatorLinkWriter = validatorLinkWriter;
         }
 
-        public override Task<AcceptResponse> Accept(AcceptRequest request, ServerCallContext context)
+        public override async Task<AcceptResponse> Accept(AcceptRequest request, ServerCallContext context)
         {
             var validatorId = request.ValidatorId;
 
-            if (request.InviteId != "12345")
+            var validatorLinkEntity = _validatorLinkReader.Get().FirstOrDefault(v => v.InvitationToken == request.InviteId);
+
+            if (validatorLinkEntity == null)
             {
-                return Task.FromResult(new AcceptResponse()
+                return new AcceptResponse()
                 {
                     Error = new ValidatorApiError()
                     {
                         Code = ValidatorApiError.Types.ErrorCodes.WrongInvitation,
                         Message = "Invitation token is not correct"
                     }
-                });
+                };
+            }
+
+            if (validatorLinkEntity.IsAccepted)
+            {
+                return new AcceptResponse()
+                {
+                    Error = new ValidatorApiError()
+                    {
+                        Code = ValidatorApiError.Types.ErrorCodes.WrongInvitation,
+                        Message = "Invitation token already accepted"
+                    }
+                };
             }
 
             if (string.IsNullOrEmpty(request.PublicKeyPem))
             {
-                return Task.FromResult(new AcceptResponse()
+                return new AcceptResponse()
                 {
                     Error = new ValidatorApiError()
                     {
                         Code = ValidatorApiError.Types.ErrorCodes.WrongInvitation,
                         Message = "PublicKeyPem cannot be empty"
                     }
-                });
+                };
             }
 
-            var token = GenerateJwtToken(validatorId, request.PublicKeyPem);
+            var token = GenerateJwtToken(validatorId, request.PublicKeyPem, validatorLinkEntity.ApiKeyId);
 
-            var resp = new AcceptResponse();
-            resp.ApiKey = token;
-            resp.Name = "Uvasya";
-            resp.Position = "Senior Cook";
-            resp.Description = "Validator to validate request for validation";
+            var resp = new AcceptResponse
+            {
+                ApiKey = token,
+                Name = validatorLinkEntity.Name,
+                Position = validatorLinkEntity.Position,
+                Description = validatorLinkEntity.Description
+            };
 
-            return Task.FromResult(resp);
+            validatorLinkEntity.ValidatorId = request.ValidatorId;
+            validatorLinkEntity.PublicKeyPem = request.PublicKeyPem;
+            validatorLinkEntity.IsAccepted = true;
+            await _validatorLinkWriter.InsertOrReplaceAsync(validatorLinkEntity);
+            
+            return resp;
         }
 
         [Authorize]
@@ -96,7 +125,7 @@ namespace KeyKeeperApi.Grpc
             return Task.FromResult(response);
         }
 
-        private string GenerateJwtToken(string validatorId, string publicKeyPem)
+        private string GenerateJwtToken(string validatorId, string publicKeyPem, string apiKeyId)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_authConfig.JwtSecret);
@@ -110,6 +139,7 @@ namespace KeyKeeperApi.Grpc
             };
             tokenDescriptor.Claims[Claims.KeyKeeperId] = validatorId;
             tokenDescriptor.Claims[Claims.PublicKeyPem] = publicKeyPem;
+            tokenDescriptor.Claims[Claims.ApiKeyId] = apiKeyId;
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
