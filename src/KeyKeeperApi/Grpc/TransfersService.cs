@@ -10,6 +10,7 @@ using KeyKeeperApi.Consts;
 using KeyKeeperApi.Grpc.tools;
 using KeyKeeperApi.MyNoSql;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using MyNoSqlServer.Abstractions;
 using Newtonsoft.Json;
 using Swisschain.Sdk.Server.Authorization;
@@ -22,6 +23,7 @@ namespace KeyKeeperApi.Grpc
     {
         private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _approvalRequestReader;
         private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _approvalRequestWriter;
+        private readonly ILogger<TransfersService> _logger;
 
         static TransfersService()
         {
@@ -39,10 +41,12 @@ namespace KeyKeeperApi.Grpc
         }
 
         public TransfersService(IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> approvalRequestReader,
-            IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> approvalRequestWriter)
+            IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> approvalRequestWriter,
+            ILogger<TransfersService> logger)
         {
             _approvalRequestReader = approvalRequestReader;
             _approvalRequestWriter = approvalRequestWriter;
+            _logger = logger;
         }
 
         private static Random _rnd = new Random();
@@ -155,6 +159,8 @@ namespace KeyKeeperApi.Grpc
                 });
             }
 
+            _logger.LogInformation("Return {Count} ApprovalRequests to ValidatorId='{ValidatorId}'", res.Payload.Count, validatorId);
+
             return Task.FromResult(res);
         }
 
@@ -211,6 +217,7 @@ namespace KeyKeeperApi.Grpc
 
             if (approvalRequest == null || !approvalRequest.IsOpen)
             {
+                _logger.LogInformation("ResolveApprovalRequests skip because active request not found. TransferSigningRequestId={TransferSigningRequestId}; ValidatorId={ValidatorId}", request.TransferSigningRequestId, validatorId);
                 return new ResolveApprovalRequestsResponse();
             }
 
@@ -219,7 +226,9 @@ namespace KeyKeeperApi.Grpc
             approvalRequest.IsOpen = false;
 
             await _approvalRequestWriter.InsertOrReplaceAsync(approvalRequest);
-            
+
+            _logger.LogInformation("ResolveApprovalRequests processed. TransferSigningRequestId={TransferSigningRequestId}; ValidatorId={ValidatorId}", request.TransferSigningRequestId, validatorId);
+
             return new ResolveApprovalRequestsResponse();
         }
 

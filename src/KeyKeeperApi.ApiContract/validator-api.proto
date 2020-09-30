@@ -113,7 +113,7 @@ message PingResponse {
     
     ValidatorApiError error = 1; // NULL in success case; Error description in error case
 
-    bytes messageEnc = 2; // ping message ncrypted by RSA algorithm with validator public key
+    string messageEnc = 2; // ping message ncrypted by RSA algorithm with validator public key in base64 form.
 
     string signatureMessage = 3; // signature for message from Sirius side. Public key to check signature can be hardcoded in client app
 }

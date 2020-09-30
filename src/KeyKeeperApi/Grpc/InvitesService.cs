@@ -105,6 +105,8 @@ namespace KeyKeeperApi.Grpc
             return resp;
         }
 
+        private Random _rnd = new Random();
+
         [Authorize]
         public override Task<PingResponse> GetPing(PingRequest request, ServerCallContext context)
         {
@@ -126,13 +128,21 @@ namespace KeyKeeperApi.Grpc
             var asynccrypto = new AsymmetricEncryptionService();
             var messageEnc = asynccrypto.Encrypt(Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("s")), publicKey);
 
-            var response = new PingResponse()
+            var response = new PingResponse();
+            if (_rnd.Next(100) > 50)
             {
-                MessageEnc = ByteString.CopyFrom(messageEnc),
-                SignatureMessage = "not-implemented-please-skip"
-            };
+                response.MessageEnc = Convert.ToBase64String(messageEnc);
+                response.SignatureMessage = "not-implemented-please-skip";
+            }
+            else
+            {
+                response.MessageEnc = string.Empty;
+                response.SignatureMessage = string.Empty;
+            }
 
             //todo: make a signature for message here
+
+            _logger.LogInformation("GetPing response. ValidatorId='{ValidatorId}'; HasMessage={HasMessage}", validatorId, !string.IsNullOrEmpty(response.MessageEnc));
 
             return Task.FromResult(response);
         }

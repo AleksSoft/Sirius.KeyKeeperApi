@@ -5,6 +5,7 @@ using Grpc.Core;
 using KeyKeeperApi.Grpc.tools;
 using KeyKeeperApi.MyNoSql;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using MyNoSqlServer.Abstractions;
 using Swisschain.Sirius.GuardianValidatorApi;
 
@@ -16,12 +17,15 @@ namespace KeyKeeperApi.Grpc
     {
         private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _dataWriter;
         private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _dataReader;
+        private readonly ILogger<ValidatorsService> _logger;
 
         public ValidatorsService(IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> dataWriter,
-            IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> dataReader)
+            IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> dataReader,
+            ILogger<ValidatorsService> logger)
         {
             _dataWriter = dataWriter;
             _dataReader = dataReader;
+            _logger = logger;
         }
 
         public override async Task<CreateApprovalRequestResponse> CreateApprovalRequest(CreateApprovalRequestRequest request, ServerCallContext context)
@@ -40,6 +44,8 @@ namespace KeyKeeperApi.Grpc
                 entity.VaultId = vaultId;
 
                 await _dataWriter.InsertOrReplaceAsync(entity);
+
+                _logger.LogInformation("CreateApprovalRequest processed. TransferSigningRequestId={TransferSigningRequestId}; TenantId={TenantId}; VaultId={VaultId}; ValidatorId={ValidatorId}", request.TransferSigningRequestId, tenantId, vaultId, validatorRequest.ValidaditorId);
             }
 
             //await _dataWriter.BulkInsertOrReplaceAsync(list, DataSynchronizationPeriod.Immediately);
@@ -72,6 +78,8 @@ namespace KeyKeeperApi.Grpc
                 };
                 
                 resp.Payload.Add(item);
+
+                _logger.LogInformation("GetApprovalResults response. TransferSigningRequestId={TransferSigningRequestId}; TenantId={TenantId}; VaultId={VaultId}; ValidatorId={ValidatorId}", item.TransferSigningRequestId, tenantId, vaultId, item.ValidatorId);
             }
 
             return Task.FromResult(resp);
@@ -88,6 +96,8 @@ namespace KeyKeeperApi.Grpc
             {
                 await _dataWriter.DeleteAsync(ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(request.ValidatorId),
                     ApprovalRequestMyNoSqlEntity.GenerateRowKey(request.TransferSigningRequestId));
+
+                _logger.LogInformation("Acknowledge ApprovalResults. TransferSigningRequestId={TransferSigningRequestId}; TenantId={TenantId}; VaultId={VaultId}; ValidatorId={ValidatorId}", item.TransferSigningRequestId, item.TenantId, item.VaultId, item.ValidatorId);
             }
 
             return new AcknowledgeResultResponse();
