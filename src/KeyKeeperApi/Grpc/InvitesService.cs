@@ -18,12 +18,10 @@ namespace KeyKeeperApi.Grpc
 {
     public class InvitesService : Invites.InvitesBase
     {
-        private readonly TestKeys _testPubKeys;
         private readonly AuthConfig _authConfig;
 
-        public InvitesService(TestKeys testPubKeys, AuthConfig authConfig)
+        public InvitesService(AuthConfig authConfig)
         {
-            _testPubKeys = testPubKeys;
             _authConfig = authConfig;
         }
 
@@ -43,19 +41,19 @@ namespace KeyKeeperApi.Grpc
                 });
             }
 
-            if (!_testPubKeys.TryGetValue(validatorId, out var publicKey))
+            if (string.IsNullOrEmpty(request.PublicKeyPem))
             {
                 return Task.FromResult(new AcceptResponse()
                 {
                     Error = new ValidatorApiError()
                     {
                         Code = ValidatorApiError.Types.ErrorCodes.WrongInvitation,
-                        Message = "Please add your ValidatorId with public key into settings for mock API"
+                        Message = "PublicKeyPem cannot be empty"
                     }
                 });
             }
 
-            var token = GenerateJwtToken(validatorId);
+            var token = GenerateJwtToken(validatorId, request.PublicKeyPem);
 
             var resp = new AcceptResponse();
             resp.ApiKey = token;
@@ -70,8 +68,9 @@ namespace KeyKeeperApi.Grpc
         public override Task<PingResponse> GetPing(PingRequest request, ServerCallContext context)
         {
             var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
-            
-            if (!_testPubKeys.TryGetValue(validatorId, out var publicKey))
+            var publicKey = context.GetHttpContext().User.GetClaimOrDefault(Claims.PublicKeyPem);
+
+            if (string.IsNullOrEmpty(publicKey))
             {
                 return Task.FromResult(new PingResponse()
                 {
@@ -84,8 +83,6 @@ namespace KeyKeeperApi.Grpc
             }
 
             var asynccrypto = new AsymmetricEncryptionService();
-            //var messageEnc = asynccrypto.Encrypt(Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("s")), publicKey);
-            var key = asynccrypto.GenerateKeyPairPem().Item2;
             var messageEnc = asynccrypto.Encrypt(Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("s")), publicKey);
 
             var response = new PingResponse()
@@ -99,7 +96,7 @@ namespace KeyKeeperApi.Grpc
             return Task.FromResult(response);
         }
 
-        private string GenerateJwtToken(string validatorId)
+        private string GenerateJwtToken(string validatorId, string publicKeyPem)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_authConfig.JwtSecret);
@@ -112,6 +109,7 @@ namespace KeyKeeperApi.Grpc
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             tokenDescriptor.Claims[Claims.KeyKeeperId] = validatorId;
+            tokenDescriptor.Claims[Claims.PublicKeyPem] = publicKeyPem;
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
