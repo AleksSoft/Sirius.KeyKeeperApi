@@ -12,6 +12,7 @@ using KeyKeeperApi.Consts;
 using KeyKeeperApi.Grpc.tools;
 using KeyKeeperApi.MyNoSql;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using MyNoSqlServer.Abstractions;
 using Swisschain.Sdk.Server.Authorization;
@@ -24,13 +25,16 @@ namespace KeyKeeperApi.Grpc
         private readonly AuthConfig _authConfig;
         private readonly IMyNoSqlServerDataReader<ValidatorLinkEntity> _validatorLinkReader;
         private readonly IMyNoSqlServerDataWriter<ValidatorLinkEntity> _validatorLinkWriter;
+        private readonly ILogger<InvitesService> _logger;
 
         public InvitesService(AuthConfig authConfig, IMyNoSqlServerDataReader<ValidatorLinkEntity> validatorLinkReader,
-            IMyNoSqlServerDataWriter<ValidatorLinkEntity> validatorLinkWriter)
+            IMyNoSqlServerDataWriter<ValidatorLinkEntity> validatorLinkWriter,
+            ILogger<InvitesService> logger)
         {
             _authConfig = authConfig;
             _validatorLinkReader = validatorLinkReader;
             _validatorLinkWriter = validatorLinkWriter;
+            _logger = logger;
         }
 
         public override async Task<AcceptResponse> Accept(AcceptRequest request, ServerCallContext context)
@@ -41,6 +45,8 @@ namespace KeyKeeperApi.Grpc
 
             if (validatorLinkEntity == null)
             {
+                _logger.LogInformation("Cannot accept invitation: 'Invitation token is not correct'. InviteId='{InviteId}'; ValidatorId='{ValidatorId}'", request.InviteId, request.ValidatorId);
+
                 return new AcceptResponse()
                 {
                     Error = new ValidatorApiError()
@@ -53,6 +59,8 @@ namespace KeyKeeperApi.Grpc
 
             if (validatorLinkEntity.IsAccepted)
             {
+                _logger.LogInformation("Cannot accept invitation: 'Invitation token already accepted'. InviteId='{InviteId}'; ValidatorId='{ValidatorId}'", request.InviteId, request.ValidatorId);
+
                 return new AcceptResponse()
                 {
                     Error = new ValidatorApiError()
@@ -65,6 +73,8 @@ namespace KeyKeeperApi.Grpc
 
             if (string.IsNullOrEmpty(request.PublicKeyPem))
             {
+                _logger.LogInformation("Cannot accept invitation: 'PublicKeyPem cannot be empty'. InviteId='{InviteId}'; ValidatorId='{ValidatorId}'", request.InviteId, request.ValidatorId);
+
                 return new AcceptResponse()
                 {
                     Error = new ValidatorApiError()
@@ -89,7 +99,9 @@ namespace KeyKeeperApi.Grpc
             validatorLinkEntity.PublicKeyPem = request.PublicKeyPem;
             validatorLinkEntity.IsAccepted = true;
             await _validatorLinkWriter.InsertOrReplaceAsync(validatorLinkEntity);
-            
+
+            _logger.LogInformation("Invitation accepted. InviteId='{InviteId}'; ValidatorId='{ValidatorId}'", request.InviteId, request.ValidatorId);
+
             return resp;
         }
 
