@@ -75,7 +75,8 @@ namespace KeyKeeperApi.Grpc.tools
 
 
             var cipher = new PaddedBufferedBlockCipher(new CbcBlockCipher(new AesEngine()), new Pkcs7Padding());
-            cipher.Init(true, new ParametersWithIV(new KeyParameter(key), nonce));
+            var parameters = new ParametersWithIV(new KeyParameter(key), nonce);
+            cipher.Init(false, parameters);
 
             var cipherData = data;
 
