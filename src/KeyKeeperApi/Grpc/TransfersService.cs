@@ -55,11 +55,24 @@ namespace KeyKeeperApi.Grpc
         public override Task<GetApprovalRequestsResponse> GetApprovalRequests(GetApprovalRequestsRequests request, ServerCallContext context)
         {
             var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
+            var tenantId = context.GetHttpContext().User.GetTenantIdOrDefault();
 
+            if (string.IsNullOrEmpty(tenantId))
+            {
+                return Task.FromResult(new GetApprovalRequestsResponse
+                {
+                    Error = new ValidatorApiError
+                    {
+                        Code = ValidatorApiError.Types.ErrorCodes.Unknown,
+                        Message = "Tenant Id required"
+                    }
+                });
+            }
+            
             var res = new GetApprovalRequestsResponse();
 
             var requests = _approvalRequestReader.Get(ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(validatorId))
-                .Where(r => r.IsOpen);
+                .Where(r => r.IsOpen && r.TenantId == tenantId);
             //todo: add filter by tenant from API key, need to add tenant into api key
 
             foreach (var entity in requests)

@@ -85,7 +85,10 @@ namespace KeyKeeperApi.Grpc
                 };
             }
 
-            var token = GenerateJwtToken(validatorId, request.PublicKeyPem, validatorLinkEntity.ApiKeyId);
+            var token = GenerateJwtToken(validatorId,
+                request.PublicKeyPem,
+                validatorLinkEntity.ApiKeyId,
+                validatorLinkEntity.TenantId);
 
             var resp = new AcceptResponse
             {
@@ -147,7 +150,7 @@ namespace KeyKeeperApi.Grpc
             return Task.FromResult(response);
         }
 
-        private string GenerateJwtToken(string validatorId, string publicKeyPem, string apiKeyId)
+        private string GenerateJwtToken(string validatorId, string publicKeyPem, string apiKeyId, string tenantId)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_authConfig.JwtSecret);
@@ -162,6 +165,7 @@ namespace KeyKeeperApi.Grpc
             tokenDescriptor.Claims[Claims.KeyKeeperId] = validatorId;
             tokenDescriptor.Claims[Claims.PublicKeyPem] = publicKeyPem;
             tokenDescriptor.Claims[Claims.ApiKeyId] = apiKeyId;
+            tokenDescriptor.Claims["tenant-id"] = tenantId;
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
