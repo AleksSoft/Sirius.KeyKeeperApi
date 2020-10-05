@@ -101,6 +101,7 @@ namespace KeyKeeperApi.Grpc
             validatorLinkEntity.ValidatorId = request.ValidatorId;
             validatorLinkEntity.PublicKeyPem = request.PublicKeyPem;
             validatorLinkEntity.IsAccepted = true;
+            validatorLinkEntity.DeviceInfo = request.DeviceInfo;
             await _validatorLinkWriter.InsertOrReplaceAsync(validatorLinkEntity);
 
             _logger.LogInformation("Invitation accepted. InviteId='{InviteId}'; ValidatorId='{ValidatorId}'", request.InviteId, request.ValidatorId);

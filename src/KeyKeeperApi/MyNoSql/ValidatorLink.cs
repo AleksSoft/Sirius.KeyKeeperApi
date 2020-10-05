@@ -23,11 +23,18 @@ namespace KeyKeeperApi.MyNoSql
 
         public bool IsAccepted { get; set; }
 
+        public string DeviceInfo { get; set; }
+
         public string Name { get; set; }
 
         public string Position { get; set; }
 
         public string Description { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public string CreatedByAdminId { get; set; }
+        public string CreatedByAdminEmail { get; set; }
 
 
         public static string GeneratePartitionKey(string tenantId) => tenantId;
