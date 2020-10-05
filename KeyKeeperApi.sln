@@ -55,10 +55,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Service-KeyKeeperApi-Worker
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sirius", "sirius", "{1A5AA860-E0C0-4BB4-91DD-3AF1A7ED74E2}"
-ProjectSection(SolutionItems) = preProject
-	deployment\settings\sirius\common.json = deployment\settings\sirius\common.json
-	deployment\settings\sirius\key-keeper-api.json = deployment\settings\sirius\key-keeper-api.json
-EndProjectSection
+	ProjectSection(SolutionItems) = preProject
+		deployment\settings\sirius\common.json = deployment\settings\sirius\common.json
+		deployment\settings\sirius\key-keeper-api.json = deployment\settings\sirius\key-keeper-api.json
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyKeeperApi.ApiContract", "src\KeyKeeperApi.ApiContract\KeyKeeperApi.ApiContract.csproj", "{3F65678A-B929-42D4-8D51-2A80203F8DEB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestGrpcApp", "src\TestGrpcApp\TestGrpcApp.csproj", "{51D5A11F-DB38-4CF6-8D46-717C81201E91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -78,6 +82,14 @@ Global
 		{4EFB5D11-FED0-420B-B71F-503FBE77B2BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4EFB5D11-FED0-420B-B71F-503FBE77B2BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4EFB5D11-FED0-420B-B71F-503FBE77B2BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F65678A-B929-42D4-8D51-2A80203F8DEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F65678A-B929-42D4-8D51-2A80203F8DEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F65678A-B929-42D4-8D51-2A80203F8DEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F65678A-B929-42D4-8D51-2A80203F8DEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51D5A11F-DB38-4CF6-8D46-717C81201E91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51D5A11F-DB38-4CF6-8D46-717C81201E91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51D5A11F-DB38-4CF6-8D46-717C81201E91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51D5A11F-DB38-4CF6-8D46-717C81201E91}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -85,9 +97,9 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{54F26A6C-5B76-40E5-8E9C-2FA0551BC226} = {85EB7950-61F2-4B83-9F3E-F74ECCE0D3C8}
 		{DB08FC9E-A784-4D4D-932C-DA320E3C5091} = {85EB7950-61F2-4B83-9F3E-F74ECCE0D3C8}
-		{AD37D2C5-7CE6-41CD-9515-B65E5A46B96C} = {DB08FC9E-A784-4D4D-932C-DA320E3C5091}
 		{EE2AA4BB-1E67-4074-B371-2C84F6469A72} = {AD37D2C5-7CE6-41CD-9515-B65E5A46B96C}
 		{AD4D20EE-C574-4F47-BD41-ECE62C1B27C0} = {AD37D2C5-7CE6-41CD-9515-B65E5A46B96C}
+		{AD37D2C5-7CE6-41CD-9515-B65E5A46B96C} = {DB08FC9E-A784-4D4D-932C-DA320E3C5091}
 		{E892D1F5-DC4C-4D13-8B62-5D182B2A676C} = {EE2AA4BB-1E67-4074-B371-2C84F6469A72}
 		{C58C8AEC-FB40-42A5-9E74-98BB95045A24} = {EE2AA4BB-1E67-4074-B371-2C84F6469A72}
 		{1A5AA860-E0C0-4BB4-91DD-3AF1A7ED74E2} = {AD4D20EE-C574-4F47-BD41-ECE62C1B27C0}

@@ -40,6 +40,7 @@ spec:
                   - "/bin/echo 'options single-request-reopen' >> /etc/resolv.conf"
           ports:
             - containerPort: 5000
+            - containerPort: 5001
           readinessProbe:
             httpGet:
               path: /api/isalive

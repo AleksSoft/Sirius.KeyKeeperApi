@@ -8,8 +8,12 @@ metadata:
   namespace: sirius
 spec:
   ports:
-    - name: http
+    - name: grpc
       port: 80
+      protocol: TCP
+      targetPort: 5001
+    - name: http
+      port: 8080
       protocol: TCP
       targetPort: 5000
   selector:

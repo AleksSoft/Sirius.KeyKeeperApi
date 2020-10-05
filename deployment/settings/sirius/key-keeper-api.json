@@ -8,5 +8,9 @@
   },
   "VaultAgent": {
     "Url": "http://vault-agent.sirius.svc.cluster.local/"
+  },
+  "MyNoSqlServer": {
+    "ReaderServiceUrl": "${Sirius-MyNoSql-Reader-Url}",
+    "WriterServiceUrl": "${Sirius-MyNoSql-Writer-Url}"
   }
 }

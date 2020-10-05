@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KeyKeeperApi.ApiContract\KeyKeeperApi.ApiContract.csproj" />
+    <ProjectReference Include="..\KeyKeeperApi\KeyKeeperApi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="private-key-test.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="public-key-test.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
