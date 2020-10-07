@@ -12,13 +12,13 @@ namespace KeyKeeperApi.Common.Configuration
 
         public VaultAgentConfig VaultAgent { get; set; }
 
-        public TestKeys TestPubKeys { get; set; } = new TestKeys();
-
         public MyNoSqlConfig MyNoSqlServer { get; set; }
+
+        public FireBaseMessagingConfig FireBaseMessaging { get; set; }
     }
 
-    public class TestKeys : Dictionary<string, string>
+    public class FireBaseMessagingConfig
     {
-
+        public string FireBasePrivateKeyJson { get; set; }
     }
 }

@@ -91,6 +91,8 @@ message AcceptRequest {
 
     string publicKeyPem = 4; // Validator public key in pem format
 
+    string pushNotificationFCMToken = 5; // This registration token comes from the client FCM SDKs
+
 }
 
 message AcceptResponse {

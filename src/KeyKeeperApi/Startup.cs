@@ -7,6 +7,7 @@ using KeyKeeperApi.Common.HostedServices;
 using KeyKeeperApi.Common.Persistence;
 using KeyKeeperApi.Grpc;
 using KeyKeeperApi.MyNoSql;
+using KeyKeeperApi.Services;
 using Microsoft.AspNetCore.Routing;
 using Swisschain.Sdk.Server.Common;
 using Swisschain.Sirius.VaultAgent.ApiClient;
@@ -48,8 +49,17 @@ namespace KeyKeeperApi
 
         protected override void ConfigureContainerExt(ContainerBuilder builder)
         {
-            builder.RegisterInstance(Config.TestPubKeys).AsSelf().SingleInstance();
             builder.RegisterInstance(Config.Auth).AsSelf().SingleInstance();
+
+            builder.RegisterType<PushNotificator>()
+                .As<IPushNotificator>()
+                .As<IStartable>()
+                .AutoActivate()
+                .SingleInstance();
+
+            builder.RegisterInstance(Config.FireBaseMessaging)
+                .AsSelf()
+                .SingleInstance();
 
             builder.RegisterType<MyNoSqlLifetimeManager>()
                 .As<IStartable>()

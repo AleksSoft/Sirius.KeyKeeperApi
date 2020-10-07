@@ -26,6 +26,7 @@
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
     <PackageReference Include="MyNoSqlServer.DataWriter" Version="1.2.6" />
     <PackageReference Include="MyNoSqlServer.DataReader" Version="1.2.16" />
+    <PackageReference Include="FirebaseAdmin" Version="1.17.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -25,6 +25,8 @@ namespace KeyKeeperApi.MyNoSql
 
         public string DeviceInfo { get; set; }
 
+        public string PushNotificationFcmToken { get; set; }
+
         public string Name { get; set; }
 
         public string Position { get; set; }
