@@ -25,15 +25,22 @@ namespace KeyKeeperApi.Grpc
         private readonly AuthConfig _authConfig;
         private readonly IMyNoSqlServerDataReader<ValidatorLinkEntity> _validatorLinkReader;
         private readonly IMyNoSqlServerDataWriter<ValidatorLinkEntity> _validatorLinkWriter;
+        private readonly IMyNoSqlServerDataReader<PingMessageMyNoSqlEntity> _pingMessageReader;
+        private readonly IMyNoSqlServerDataWriter<PingMessageMyNoSqlEntity> _pingMessageWriter;
         private readonly ILogger<InvitesService> _logger;
 
-        public InvitesService(AuthConfig authConfig, IMyNoSqlServerDataReader<ValidatorLinkEntity> validatorLinkReader,
+        public InvitesService(AuthConfig authConfig, 
+            IMyNoSqlServerDataReader<ValidatorLinkEntity> validatorLinkReader,
             IMyNoSqlServerDataWriter<ValidatorLinkEntity> validatorLinkWriter,
+            IMyNoSqlServerDataReader<PingMessageMyNoSqlEntity> pingMessageReader,
+            IMyNoSqlServerDataWriter<PingMessageMyNoSqlEntity> pingMessageWriter,
             ILogger<InvitesService> logger)
         {
             _authConfig = authConfig;
             _validatorLinkReader = validatorLinkReader;
             _validatorLinkWriter = validatorLinkWriter;
+            _pingMessageReader = pingMessageReader;
+            _pingMessageWriter = pingMessageWriter;
             _logger = logger;
         }
 
@@ -112,43 +119,49 @@ namespace KeyKeeperApi.Grpc
         private Random _rnd = new Random();
 
         [Authorize]
-        public override Task<PingResponse> GetPing(PingRequest request, ServerCallContext context)
+        public override async Task<PingResponse> GetPing(PingRequest request, ServerCallContext context)
         {
             var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
             var publicKey = context.GetHttpContext().User.GetClaimOrDefault(Claims.PublicKeyPem);
 
             if (string.IsNullOrEmpty(publicKey))
             {
-                return Task.FromResult(new PingResponse()
+                return new PingResponse()
                 {
                     Error = new ValidatorApiError()
                     {
                         Code = ValidatorApiError.Types.ErrorCodes.InternalServerError,
                         Message = "Please add your ValidatorId with public key into settings for mock API"
                     }
-                });
+                };
             }
 
-            var asynccrypto = new AsymmetricEncryptionService();
-            var messageEnc = asynccrypto.Encrypt(Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("s")), publicKey);
+            var message = _pingMessageReader.Get(PingMessageMyNoSqlEntity.GeneratePartitionKey(validatorId),
+                PingMessageMyNoSqlEntity.GenerateRowKey());
 
             var response = new PingResponse();
-            if (_rnd.Next(100) > 50)
-            {
-                response.MessageEnc = Convert.ToBase64String(messageEnc);
-                response.SignatureMessage = "not-implemented-please-skip";
-            }
-            else
+
+            if (message == null)
             {
                 response.MessageEnc = string.Empty;
                 response.SignatureMessage = string.Empty;
+            }
+            else
+            {
+                var asynccrypto = new AsymmetricEncryptionService();
+                var messageEnc = asynccrypto.Encrypt(Encoding.UTF8.GetBytes(message.Message), publicKey);
+
+                response.MessageEnc = Convert.ToBase64String(messageEnc);
+                response.SignatureMessage = "not-implemented-please-skip";
+
+                await _pingMessageWriter.DeleteAsync(message.PartitionKey, message.RowKey);
             }
 
             //todo: make a signature for message here
 
             _logger.LogInformation("GetPing response. ValidatorId='{ValidatorId}'; HasMessage={HasMessage}", validatorId, !string.IsNullOrEmpty(response.MessageEnc));
 
-            return Task.FromResult(response);
+            return response;
         }
 
         private string GenerateJwtToken(string validatorId, string publicKeyPem, string apiKeyId, string tenantId)
