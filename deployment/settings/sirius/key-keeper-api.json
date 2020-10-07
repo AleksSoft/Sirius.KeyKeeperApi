@@ -12,5 +12,8 @@
   "MyNoSqlServer": {
     "ReaderServiceUrl": "${Sirius-MyNoSql-Reader-Url}",
     "WriterServiceUrl": "${Sirius-MyNoSql-Writer-Url}"
-  }
+  },
+  "FireBaseMessaging": {
+    "FireBasePrivateKeyJson": "${Sirius-KeyKeeperApi-FireBasePrivateKeyJson}"
+  } 
 }

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Grpc.Core;
 using KeyKeeperApi.Grpc.tools;
 using KeyKeeperApi.MyNoSql;
+using KeyKeeperApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using MyNoSqlServer.Abstractions;
@@ -18,17 +19,20 @@ namespace KeyKeeperApi.Grpc
         private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _dataWriter;
         private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _dataReader;
         private readonly IMyNoSqlServerDataReader<ValidatorLinkEntity> _validatorLinkReader;
+        private readonly IPushNotificator _pushNotificator;
         private readonly ILogger<ValidatorsService> _logger;
 
         public ValidatorsService(
             IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> dataWriter,
             IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> dataReader,
             IMyNoSqlServerDataReader<ValidatorLinkEntity> validatorLinkReader,
+            IPushNotificator pushNotificator,
             ILogger<ValidatorsService> logger)
         {
             _dataWriter = dataWriter;
             _dataReader = dataReader;
             _validatorLinkReader = validatorLinkReader;
+            _pushNotificator = pushNotificator;
             _logger = logger;
         }
 
@@ -48,6 +52,8 @@ namespace KeyKeeperApi.Grpc
                 entity.VaultId = vaultId;
 
                 await _dataWriter.InsertOrReplaceAsync(entity);
+
+                await _pushNotificator.SendPushNotifications(entity);
 
                 _logger.LogInformation("CreateApprovalRequest processed. TransferSigningRequestId={TransferSigningRequestId}; TenantId={TenantId}; VaultId={VaultId}; ValidatorId={ValidatorId}", request.TransferSigningRequestId, tenantId, vaultId, validatorRequest.ValidaditorId);
             }
