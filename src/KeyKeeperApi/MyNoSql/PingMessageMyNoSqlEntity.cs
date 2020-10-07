@@ -7,8 +7,6 @@ namespace KeyKeeperApi.MyNoSql
     {
         public const string TableName = "validator-ping-message";
 
-        public string PingMessageId { get; set; }
-
         public string ValidatorId { get; set; }
 
         public string Message { get; set; }
@@ -18,7 +16,9 @@ namespace KeyKeeperApi.MyNoSql
             var entity = new PingMessageMyNoSqlEntity()
             {
                 PartitionKey = GeneratePartitionKey(validatorId),
-                RowKey = GenerateRowKey()
+                RowKey = GenerateRowKey(),
+                Message = message,
+                ValidatorId = validatorId
             };
             return entity;
         }

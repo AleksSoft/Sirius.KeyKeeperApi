@@ -198,6 +198,13 @@ namespace KeyKeeperApi.WebApi
                 return;
             }
 
+            if (!entity.IsAccepted)
+            {
+                _logger.LogInformation("Cannot send ping. ValidatorLinkEntity is not accepted: {ApiKeyId}", request.ApiKeyId);
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
             if (string.IsNullOrEmpty(request.Message))
             {
                 _logger.LogInformation("Cannot send ping. Message cannot be empty: {ApiKeyId}", request.ApiKeyId);
