@@ -67,7 +67,10 @@ namespace KeyKeeperApi
 
             RegisterNoSqlReaderAndWriter<ApprovalRequestMyNoSqlEntity>(builder, ApprovalRequestMyNoSqlEntity.TableName);
             RegisterNoSqlReaderAndWriter<ValidatorLinkEntity>(builder, ValidatorLinkEntity.TableName);
+            RegisterNoSqlReaderAndWriter<PingMessageMyNoSqlEntity>(builder, PingMessageMyNoSqlEntity.TableName);
             
+
+
         }
 
         private void RegisterNoSqlReaderAndWriter<TEntity>(ContainerBuilder builder, string table) where TEntity : IMyNoSqlDbEntity, new()

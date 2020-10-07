@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using Grpc.Core;
 using KeyKeeperApi.Consts;
@@ -22,14 +23,17 @@ namespace KeyKeeperApi.WebApi
     {
         private readonly IMyNoSqlServerDataWriter<ValidatorLinkEntity> _validationWriter;
         private readonly IMyNoSqlServerDataReader<ValidatorLinkEntity> _validationReader;
+        private readonly IMyNoSqlServerDataWriter<PingMessageMyNoSqlEntity> _pingMessageWriter;
         private readonly ILogger<ValidatorsController> _logger;
 
         public ValidatorsController(IMyNoSqlServerDataWriter<ValidatorLinkEntity> validationWriter,
             IMyNoSqlServerDataReader<ValidatorLinkEntity> validationReader,
+            IMyNoSqlServerDataWriter<PingMessageMyNoSqlEntity> pingMessageWriter,
             ILogger<ValidatorsController> logger)
         {
             _validationWriter = validationWriter;
             _validationReader = validationReader;
+            _pingMessageWriter = pingMessageWriter;
             _logger = logger;
         }
 
@@ -172,6 +176,54 @@ namespace KeyKeeperApi.WebApi
                 .ToList();
 
             return result;
+        }
+
+        [HttpPost("ping")]
+        public async Task PingValidatorAsync([FromBody] PingValidatorRequest request)
+        {
+            var (auth, tenantId, adminId, adminEmail) = Authorize();
+
+            if (!auth)
+            {
+                return;
+            }
+
+            var entity = _validationReader.Get(ValidatorLinkEntity.GeneratePartitionKey(tenantId),
+                ValidatorLinkEntity.GenerateRowKey(request.ApiKeyId));
+
+            if (entity == null)
+            {
+                _logger.LogInformation("Cannot send ping. ValidatorLinkEntity not found by API key: {ApiKeyId}", request.ApiKeyId);
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            if (!entity.IsAccepted)
+            {
+                _logger.LogInformation("Cannot send ping. ValidatorLinkEntity is not accepted: {ApiKeyId}", request.ApiKeyId);
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            if (string.IsNullOrEmpty(request.Message))
+            {
+                _logger.LogInformation("Cannot send ping. Message cannot be empty: {ApiKeyId}", request.ApiKeyId);
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            if (Encoding.UTF8.GetBytes(request.Message).Length > 100)
+            {
+                _logger.LogInformation("Cannot send ping. Message length in bytes more that 100: {ApiKeyId}; Message: {Message}", request.ApiKeyId, request.Message);
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return;
+            }
+
+            var message = PingMessageMyNoSqlEntity.Generate(entity.ValidatorId, request.Message);
+
+            await _pingMessageWriter.InsertOrReplaceAsync(message);
+
+            _logger.LogInformation("Ping message are created. API key: {ApiKeyId}; ValidatorId: {ValidatorId}; TenantId: {TenantId}; Name: {Name}; AdminId: {AdminId}", request.ApiKeyId, entity.ValidatorId, entity.TenantId, entity.Name, adminId);
         }
 
 

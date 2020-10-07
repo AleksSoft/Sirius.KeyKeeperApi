@@ -17,14 +17,18 @@ namespace KeyKeeperApi.Grpc
     {
         private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _dataWriter;
         private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _dataReader;
+        private readonly IMyNoSqlServerDataReader<ValidatorLinkEntity> _validatorLinkReader;
         private readonly ILogger<ValidatorsService> _logger;
 
-        public ValidatorsService(IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> dataWriter,
+        public ValidatorsService(
+            IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> dataWriter,
             IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> dataReader,
+            IMyNoSqlServerDataReader<ValidatorLinkEntity> validatorLinkReader,
             ILogger<ValidatorsService> logger)
         {
             _dataWriter = dataWriter;
             _dataReader = dataReader;
+            _validatorLinkReader = validatorLinkReader;
             _logger = logger;
         }
 
@@ -101,6 +105,38 @@ namespace KeyKeeperApi.Grpc
             }
 
             return new AcknowledgeResultResponse();
+        }
+
+        public override Task<ActiveValidatorsResponse> GetActiveValidators(ActiveValidatorsRequest request, ServerCallContext context)
+        {
+            var tenantId = context.GetTenantId();
+
+            var listAll = _validatorLinkReader.Get()
+                .Where(v => v.TenantId == tenantId)
+                .Where(v => v.IsAccepted)
+                .Where(v => !v.IsBlocked)
+                .Select(v => new { v.ValidatorId, v.PublicKeyPem});
+
+            var response = new ActiveValidatorsResponse();
+
+            var hashset = new HashSet<string>();
+
+            foreach (var item in listAll)
+            {
+                if (!hashset.Contains(item.ValidatorId))
+                {
+                    response.ActiveValidatorsRequest.Add(new ActiveValidatorsResponse.Types.ActiveValidator()
+                    {
+                        ValidatorId = item.ValidatorId,
+                        ValidatorPublicKeyPem = item.PublicKeyPem
+                    });
+                    hashset.Add(item.ValidatorId);
+                }
+            }
+
+            _logger.LogInformation("Return validator list TenantId={TenantId}; Count={Count}", tenantId, response.ActiveValidatorsRequest.Count);
+
+            return Task.FromResult(response);
         }
     }
 

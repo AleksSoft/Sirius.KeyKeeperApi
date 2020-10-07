@@ -13,6 +13,8 @@ service Validators {
     rpc CreateApprovalRequest(CreateApprovalRequestRequest) returns (CreateApprovalRequestResponse);
     rpc GetApprovalResults(GetApprovalResultsRequest) returns (GetApprovalResponse);
     rpc AcknowledgeResult(AcknowledgeResultRequest) returns (AcknowledgeResultResponse);
+
+    rpc GetActiveValidators(ActiveValidatorsRequest) returns (ActiveValidatorsResponse);
 }
 
 message CreateApprovalRequestRequest {
@@ -75,6 +77,26 @@ message AcknowledgeResultRequest{
 message AcknowledgeResultResponse {
 
     ValidatorsApiError error = 1; 
+
+}
+
+message ActiveValidatorsRequest {
+
+}
+
+message ActiveValidatorsResponse {
+
+    ValidatorsApiError error = 1; 
+
+    repeated ActiveValidator ActiveValidatorsRequest = 2;
+
+    message ActiveValidator {
+    
+        string validatorId = 1;
+
+        string validatorPublicKeyPem = 2;
+
+    }
 
 }
 
