@@ -38,6 +38,7 @@ namespace KeyKeeperApi.Services
 
             var validators = _validatorLinkReader.Get()
                 .Where(v => v.TenantId == approvalRequest.TenantId)
+                .Where(v => v.ValidatorId == approvalRequest.ValidatorId)
                 .Where(v => v.IsAccepted)
                 .Where(v => !v.IsBlocked)
                 .Where(v => !string.IsNullOrEmpty(v.DeviceInfo))
