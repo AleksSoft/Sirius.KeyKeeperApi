@@ -34,6 +34,7 @@ namespace KeyKeeperApi.Services
 
         public async Task SendPushNotifications(ApprovalRequestMyNoSqlEntity approvalRequest)
         {
+            var traceLog = string.Empty;
             try
             {
                 if (!_isActive)
@@ -81,7 +82,7 @@ namespace KeyKeeperApi.Services
                     Tokens = tokens
                 };
 
-                Console.WriteLine(JsonConvert.SerializeObject(message));
+                traceLog = JsonConvert.SerializeObject(message);
 
                 var response = await FirebaseMessaging.DefaultInstance.SendMulticastAsync(message);
 
@@ -94,6 +95,7 @@ namespace KeyKeeperApi.Services
             }
             catch(Exception ex)
             {
+                Console.WriteLine(traceLog);
                 _logger.LogError(ex, "Cannot send push notification to validator. TransferSigningRequestId={TransferSigningRequestId}; ValidatorId={ValidatorId}", approvalRequest.TransferSigningRequestId, approvalRequest.ValidatorId);
             }
         }
