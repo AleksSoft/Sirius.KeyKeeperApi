@@ -10,6 +10,7 @@ using KeyKeeperApi.Common.Configuration;
 using KeyKeeperApi.MyNoSql;
 using Microsoft.Extensions.Logging;
 using MyNoSqlServer.Abstractions;
+using Newtonsoft.Json;
 
 namespace KeyKeeperApi.Services
 {
@@ -33,42 +34,68 @@ namespace KeyKeeperApi.Services
 
         public async Task SendPushNotifications(ApprovalRequestMyNoSqlEntity approvalRequest)
         {
-            if (!_isActive)
-                return;
-
-            var validators = _validatorLinkReader.Get()
-                .Where(v => v.TenantId == approvalRequest.TenantId)
-                .Where(v => v.ValidatorId == approvalRequest.ValidatorId)
-                .Where(v => v.IsAccepted)
-                .Where(v => !v.IsBlocked)
-                .Where(v => !string.IsNullOrEmpty(v.DeviceInfo))
-                .Where(v => !string.IsNullOrEmpty(v.PushNotificationFcmToken));
-
-            var hashset = new HashSet<string>();
-            var tokens = new List<string>();
-
-            foreach (var validator in validators)
+            try
             {
-                if (!hashset.Contains(validator.DeviceInfo))
+                if (!_isActive)
+                    return;
+
+                var validators = _validatorLinkReader.Get()
+                    .Where(v => v.TenantId == approvalRequest.TenantId)
+                    .Where(v => v.ValidatorId == approvalRequest.ValidatorId)
+                    .Where(v => v.IsAccepted)
+                    .Where(v => !v.IsBlocked)
+                    .Where(v => !string.IsNullOrEmpty(v.DeviceInfo))
+                    .Where(v => !string.IsNullOrEmpty(v.PushNotificationFcmToken));
+
+                var hashset = new HashSet<string>();
+                var tokens = new List<string>();
+
+                foreach (var validator in validators)
                 {
-                    tokens.Add(validator.PushNotificationFcmToken);
-                    hashset.Add(validator.DeviceInfo);
+                    if (!hashset.Contains(validator.DeviceInfo))
+                    {
+                        tokens.Add(validator.PushNotificationFcmToken);
+                        hashset.Add(validator.DeviceInfo);
+                    }
                 }
-            }
 
-            var message = new MulticastMessage()
-            {
-                Notification = new Notification()
+                if (!tokens.Any())
                 {
-                    Title = "New Approval Request",
-                    Body = "You receive a new approval request. Please check the transfer details in the application."
-                },
-                Tokens = tokens
-            };
+                    _logger.LogInformation(
+                        "Push notification for TransferSigningRequestId={TransferSigningRequestId} is sent to {ValidatorId}. SuccessCount: {SuccessCount}. FailureCount: {FailureCount}.",
+                        approvalRequest.TransferSigningRequestId,
+                        approvalRequest.ValidatorId,
+                        0,
+                        0);
+                    return;
+                }
 
-            var response = await FirebaseMessaging.DefaultInstance.SendMulticastAsync(message);
+                var message = new MulticastMessage()
+                {
+                    Notification = new Notification()
+                    {
+                        Title = "New Approval Request",
+                        Body =
+                            "You receive a new approval request. Please check the transfer details in the application."
+                    },
+                    Tokens = tokens
+                };
 
-            _logger.LogInformation("Push notification for TransferSigningRequestId={TransferSigningRequestId} is sent. SuccessCount: {SuccessCount}. FailureCount: {FailureCount}.", approvalRequest.TransferSigningRequestId, response.SuccessCount, response.FailureCount);
+                Console.WriteLine(JsonConvert.SerializeObject(message));
+
+                var response = await FirebaseMessaging.DefaultInstance.SendMulticastAsync(message);
+
+                _logger.LogInformation(
+                    "Push notification for TransferSigningRequestId={TransferSigningRequestId} is sent to {ValidatorId}. SuccessCount: {SuccessCount}. FailureCount: {FailureCount}.",
+                    approvalRequest.TransferSigningRequestId,
+                    approvalRequest.ValidatorId,
+                    response.SuccessCount,
+                    response.FailureCount);
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Cannot send push notification to validator. TransferSigningRequestId={TransferSigningRequestId}; ValidatorId={ValidatorId}", approvalRequest.TransferSigningRequestId, approvalRequest.ValidatorId);
+            }
         }
 
         public void Start()
