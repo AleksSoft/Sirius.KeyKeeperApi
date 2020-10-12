@@ -165,6 +165,12 @@ namespace KeyKeeperApi.Grpc
             return response;
         }
 
+        [Authorize]
+        public override Task<RemoveVaultConnectionResponse> RemoveVaultConnection(RemoveVaultConnectionRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(new RemoveVaultConnectionResponse());
+        }
+
         private string GenerateJwtToken(string validatorId, string publicKeyPem, string apiKeyId, string tenantId)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
