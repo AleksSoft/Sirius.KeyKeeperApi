@@ -132,7 +132,7 @@ namespace KeyKeeperApi.Grpc
                     Error = new ValidatorApiError()
                     {
                         Code = ValidatorApiError.Types.ErrorCodes.InternalServerError,
-                        Message = "Please add your ValidatorId with public key into settings for mock API"
+                        Message = "Incorrect Bearer Token."
                     }
                 };
             }
@@ -158,17 +158,41 @@ namespace KeyKeeperApi.Grpc
                 await _pingMessageWriter.DeleteAsync(message.PartitionKey, message.RowKey);
             }
 
-            //todo: make a signature for message here
-
             _logger.LogInformation("GetPing response. ValidatorId='{ValidatorId}'; HasMessage={HasMessage}", validatorId, !string.IsNullOrEmpty(response.MessageEnc));
 
             return response;
         }
 
         [Authorize]
-        public override Task<RemoveVaultConnectionResponse> RemoveVaultConnection(RemoveVaultConnectionRequest request, ServerCallContext context)
+        public override async Task<RemoveVaultConnectionResponse> RemoveVaultConnection(RemoveVaultConnectionRequest request, ServerCallContext context)
         {
-            return Task.FromResult(new RemoveVaultConnectionResponse());
+            var tenantId = context.GetHttpContext().User.GetClaimOrDefault(Claims.TenantId);
+            var apiKeyId = context.GetHttpContext().User.GetClaimOrDefault(Claims.ApiKeyId);
+
+            if (string.IsNullOrEmpty(apiKeyId))
+            {
+                return new RemoveVaultConnectionResponse()
+                {
+                    Error = new ValidatorApiError()
+                    {
+                        Code = ValidatorApiError.Types.ErrorCodes.InternalServerError,
+                        Message = "Incorrect Bearer Token. "
+                    }
+                };
+            }
+
+            var validatorLinkEntity = _validatorLinkReader.Get(
+                ValidatorLinkEntity.GeneratePartitionKey(tenantId),
+                ValidatorLinkEntity.GenerateRowKey(apiKeyId));
+
+            if (validatorLinkEntity != null)
+            {
+                await _validatorLinkWriter.DeleteAsync(
+                    ValidatorLinkEntity.GeneratePartitionKey(tenantId),
+                    ValidatorLinkEntity.GenerateRowKey(apiKeyId));
+            }
+
+            return new RemoveVaultConnectionResponse();
         }
 
         private string GenerateJwtToken(string validatorId, string publicKeyPem, string apiKeyId, string tenantId)
