@@ -20,6 +20,10 @@ service Invites {
     rpc RemoveVaultConnection (RemoveVaultConnectionRequest) returns (RemoveVaultConnectionResponse);
 }
 
+service Version {
+    rpc GetCurrentVersion(GetCurrentVersionRequest) returns (GetCurrentVersionResponce);
+}
+
 
 // ********* Transfers *********
 
@@ -128,6 +132,20 @@ message RemoveVaultConnectionRequest {
 message RemoveVaultConnectionResponse {
 
     ValidatorApiError error = 1; // NULL in success case; Error description in error case
+
+}
+
+
+// ********* Versions *********
+
+message GetCurrentVersionRequest {
+
+}
+
+message GetCurrentVersionResponce {
+
+    int32 major = 1;
+    int32 minor = 2;
 
 }
 
