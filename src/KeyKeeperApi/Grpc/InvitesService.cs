@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using MyNoSqlServer.Abstractions;
 using Swisschain.Sdk.Server.Authorization;
 using Swisschain.Sirius.ValidatorApi;
+using Version = Swisschain.Sirius.ValidatorApi.Version;
 
 namespace KeyKeeperApi.Grpc
 {
@@ -216,5 +217,18 @@ namespace KeyKeeperApi.Grpc
         }
     }
 
-    
+
+    public class VersionService : Version.VersionBase
+    {
+        public override Task<GetCurrentVersionResponce> GetCurrentVersion(GetCurrentVersionRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(new GetCurrentVersionResponce()
+            {
+                Major = 1,
+                Minor = 0
+            });
+        }
+    }
+
+
 }

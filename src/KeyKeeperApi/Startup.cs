@@ -45,6 +45,8 @@ namespace KeyKeeperApi
             endpoints.MapGrpcService<TransfersService>();
             endpoints.MapGrpcService<InvitesService>();
             endpoints.MapGrpcService<ValidatorsService>();
+            endpoints.MapGrpcService<VersionService>();
+            
         }
 
         protected override void ConfigureContainerExt(ContainerBuilder builder)
