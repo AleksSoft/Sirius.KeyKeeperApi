@@ -12,7 +12,6 @@ using Swisschain.Sirius.GuardianValidatorApi;
 
 namespace KeyKeeperApi.Grpc
 {
-    
     [Authorize]
     public class ValidatorsService  : Validators.ValidatorsBase
     {
@@ -38,12 +37,12 @@ namespace KeyKeeperApi.Grpc
 
         public override async Task<CreateApprovalRequestResponse> CreateApprovalRequest(CreateApprovalRequestRequest request, ServerCallContext context)
         {
-            var tenantId = context.GetTenantId();
+            var tenantId = request.TenantId;
             var vaultId = context.GetVaultId();
 
             foreach (var validatorRequest in request.ValidatorRequests)
             {
-                var entity = ApprovalRequestMyNoSqlEntity.Generate(validatorRequest.ValidaditorId, request.TransferSigningRequestId);
+                var entity = ApprovalRequestMyNoSqlEntity.Generate(validatorRequest.ValidatorId, request.TransferSigningRequestId);
                 entity.TenantId = tenantId;
                 entity.MessageEnc = validatorRequest.TransactionDetailsEncBase64;
                 entity.SecretEnc = validatorRequest.SecretEncBase64;
@@ -55,7 +54,7 @@ namespace KeyKeeperApi.Grpc
 
                 await _pushNotificator.SendPushNotifications(entity);
 
-                _logger.LogInformation("CreateApprovalRequest processed. TransferSigningRequestId={TransferSigningRequestId}; TenantId={TenantId}; VaultId={VaultId}; ValidatorId={ValidatorId}", request.TransferSigningRequestId, tenantId, vaultId, validatorRequest.ValidaditorId);
+                _logger.LogInformation("CreateApprovalRequest processed. TransferSigningRequestId={TransferSigningRequestId}; TenantId={TenantId}; VaultId={VaultId}; ValidatorId={ValidatorId}", request.TransferSigningRequestId, tenantId, vaultId, validatorRequest.ValidatorId);
             }
 
             //await _dataWriter.BulkInsertOrReplaceAsync(list, DataSynchronizationPeriod.Immediately);
@@ -67,11 +66,10 @@ namespace KeyKeeperApi.Grpc
 
         public override Task<GetApprovalResponse> GetApprovalResults(GetApprovalResultsRequest request, ServerCallContext context)
         {
-            var tenantId = context.GetTenantId();
-            var vaultId = context.GetVaultId()?.ToString();
+            var vaultId = context.GetVaultId();
 
             var list = _dataReader.Get()
-                .Where(e => e.TenantId == tenantId && e.VaultId == vaultId)
+                .Where(e => e.VaultId == vaultId)
                 .Where(e => !e.IsOpen)
                 .ToList();
 
@@ -79,7 +77,7 @@ namespace KeyKeeperApi.Grpc
 
             foreach (var entity in list)
             {
-                var item = new GetApprovalResponse.Types.ApprovalResponse()
+                var item = new GetApprovalResponse.Types.ApprovalResponse
                 {
                     ValidatorId = entity.ValidatorId,
                     TransferSigningRequestId = entity.TransferSigningRequestId,
@@ -89,7 +87,7 @@ namespace KeyKeeperApi.Grpc
                 
                 resp.Payload.Add(item);
 
-                _logger.LogInformation("GetApprovalResults response. TransferSigningRequestId={TransferSigningRequestId}; TenantId={TenantId}; VaultId={VaultId}; ValidatorId={ValidatorId}", item.TransferSigningRequestId, tenantId, vaultId, item.ValidatorId);
+                _logger.LogInformation("GetApprovalResults response. TransferSigningRequestId={TransferSigningRequestId}; VaultId={VaultId}; ValidatorId={ValidatorId}", item.TransferSigningRequestId,  vaultId, item.ValidatorId);
             }
 
             return Task.FromResult(resp);
@@ -115,7 +113,7 @@ namespace KeyKeeperApi.Grpc
 
         public override Task<ActiveValidatorsResponse> GetActiveValidators(ActiveValidatorsRequest request, ServerCallContext context)
         {
-            var tenantId = context.GetTenantId();
+            var tenantId = request.TenantId;
 
             var listAll = _validatorLinkReader.Get()
                 .Where(v => v.TenantId == tenantId)
@@ -145,6 +143,4 @@ namespace KeyKeeperApi.Grpc
             return Task.FromResult(response);
         }
     }
-
-    
 }
