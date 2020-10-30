@@ -10,109 +10,90 @@ option csharp_namespace = "Swisschain.Sirius.GuardianValidatorApi";
 package swisschain.sirius.GuardianValidatorApi;
 
 service Validators {
-    rpc CreateApprovalRequest(CreateApprovalRequestRequest) returns (CreateApprovalRequestResponse);
-    rpc GetApprovalResults(GetApprovalResultsRequest) returns (GetApprovalResponse);
-    rpc AcknowledgeResult(AcknowledgeResultRequest) returns (AcknowledgeResultResponse);
-
-    rpc GetActiveValidators(ActiveValidatorsRequest) returns (ActiveValidatorsResponse);
+    rpc CreateApprovalRequest (CreateApprovalRequestRequest) returns (CreateApprovalRequestResponse);
+    rpc GetApprovalResults (GetApprovalResultsRequest) returns (GetApprovalResponse);
+    rpc AcknowledgeResult (AcknowledgeResultRequest) returns (AcknowledgeResultResponse);
+    rpc GetActiveValidators (ActiveValidatorsRequest) returns (ActiveValidatorsResponse);
 }
 
+// CreateApprovalRequest
+
 message CreateApprovalRequestRequest {
-
-    string requestId = 1; // technical field with unique request ID
-    string transferSigningRequestId = 2; // Id of transaction verification process
-    repeated ValidatorRequest validatorRequests = 3; // list of requests to validators
-
     message ValidatorRequest {
-
-        string validaditorId = 1;
+        string validatorId = 1;
         string transactionDetailsEncBase64 = 2; // json with transaction details encrupted by AES algorithm with 'Secret' as key and IV as nonce. Formar: base64
         string secretEncBase64 = 3; // Secret used for encrypt transaction detail. Secret encrypted by RSA algorithm with validator public key. Formar: base64
         string ivNonce = 4; // IV used for encrypt transaction detail. Formar: base64
-
     }
+
+    string requestId = 1; // technical field with unique request ID
+    string tenant_id = 2;
+    string transferSigningRequestId = 3; // Id of transaction verification process
+    repeated ValidatorRequest validatorRequests = 4; // list of requests to validators
 }
 
 message CreateApprovalRequestResponse {
-
-    ValidatorsApiError error = 1; 
-    
+    ValidatorsApiError error = 1;
 }
 
+// GetApprovalResults
+
 message GetApprovalResultsRequest {
-    
 }
 
 message GetApprovalResponse {
-
-    ValidatorsApiError error = 1; 
-
-    repeated ApprovalResponse payload = 2;
-
     message ApprovalResponse {
-
         string validatorId = 1; // Id of validator. ID = PublicKeyBytes.Sha256().ToBase64()
         string transferSigningRequestId = 2; // Id of transaction verification process
         string resolutionDocumentEncBase64 = 3; // Document with transactionDetail, resolution and resolution message.string Document encrupted by AES algorithm with 'Secret' as key and IV from ValidatorRequest.
         string signature = 4; // signature from validator private key (TransferSigningRequestId, Resolution, ResolutionMessage, TransactionDetail) encoded in base64
-
     }
 
     enum ResolutionStatus {
-
         approve = 0; // validator approve a transaction
-        reject = 1;  // validator decline a transaction
-        skip = 2;    // validator do to has any conserns and reasons to decline.option But validator cannot approve it.
-
+        reject = 1; // validator decline a transaction
+        skip = 2; // validator do to has any conserns and reasons to decline.option But validator cannot approve it.
     }
 
+    ValidatorsApiError error = 1;
+    repeated ApprovalResponse payload = 2;
 }
 
-message AcknowledgeResultRequest{
-    
+// AcknowledgeResult
+
+message AcknowledgeResultRequest {
     string transferSigningRequestId = 1; // Id of transaction verification process
     string validatorId = 2; // Id of validator. ID = PublicKeyBytes.Sha256().ToBase64()
 }
 
 message AcknowledgeResultResponse {
-
-    ValidatorsApiError error = 1; 
-
+    ValidatorsApiError error = 1;
 }
 
-message ActiveValidatorsRequest {
+// GetActiveValidators
 
+message ActiveValidatorsRequest {
+    string tenant_id = 1;
 }
 
 message ActiveValidatorsResponse {
-
-    ValidatorsApiError error = 1; 
-
-    repeated ActiveValidator ActiveValidatorsRequest = 2;
-
     message ActiveValidator {
-    
         string validatorId = 1;
-
         string validatorPublicKeyPem = 2;
-
     }
 
+    ValidatorsApiError error = 1;
+    repeated ActiveValidator ActiveValidatorsRequest = 2;
 }
-
 
 // ********* errors *********
 
 message ValidatorsApiError {
-    
     enum ErrorCodes {
         Unknown = 0;
         InternalServerError = 1; // some error on server side,option try againl later.
-
     }
 
     ErrorCodes code = 1; // error code
-    string message = 2;  // error message in english
-
-
+    string message = 2; // error message in english
 }
