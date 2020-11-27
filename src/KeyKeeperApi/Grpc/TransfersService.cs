@@ -23,29 +23,17 @@ namespace KeyKeeperApi.Grpc
     {
         private readonly IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> _approvalRequestReader;
         private readonly IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> _approvalRequestWriter;
+        private readonly IMyNoSqlServerDataReader<ValidatorLinkEntity> _validatorLinkReader;
         private readonly ILogger<TransfersService> _logger;
-
-        static TransfersService()
-        {
-            var algo = new SymmetricEncryptionService();
-            _fakeRequestSecretAndNonce["-fake-0"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-1"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-2"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-3"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-4"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-5"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-6"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-7"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-8"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-            _fakeRequestSecretAndNonce["-fake-9"] = new KeyValuePair<byte[], byte[]>(algo.GenerateKey(), algo.GenerateNonce());
-        }
 
         public TransfersService(IMyNoSqlServerDataReader<ApprovalRequestMyNoSqlEntity> approvalRequestReader,
             IMyNoSqlServerDataWriter<ApprovalRequestMyNoSqlEntity> approvalRequestWriter,
+            IMyNoSqlServerDataReader<ValidatorLinkEntity> validatorLinkReader,
             ILogger<TransfersService> logger)
         {
             _approvalRequestReader = approvalRequestReader;
             _approvalRequestWriter = approvalRequestWriter;
+            _validatorLinkReader = validatorLinkReader;
             _logger = logger;
         }
 
@@ -56,6 +44,7 @@ namespace KeyKeeperApi.Grpc
         {
             var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
             var tenantId = context.GetHttpContext().User.GetTenantIdOrDefault();
+            var apiKeyId = context.GetHttpContext().User.GetClaimOrDefault(Claims.ApiKeyId);
 
             if (string.IsNullOrEmpty(tenantId))
             {
@@ -68,7 +57,23 @@ namespace KeyKeeperApi.Grpc
                     }
                 });
             }
-            
+
+            var validatorLinkEntity = _validatorLinkReader.Get(
+                ValidatorLinkEntity.GeneratePartitionKey(tenantId),
+                ValidatorLinkEntity.GenerateRowKey(apiKeyId));
+
+            if (validatorLinkEntity == null)
+            {
+                return Task.FromResult(new GetApprovalRequestsResponse
+                {
+                    Error = new ValidatorApiError
+                    {
+                        Code = ValidatorApiError.Types.ErrorCodes.ExpiredApiKey,
+                        Message = "API key is expired or deleted"
+                    }
+                });
+            }
+
             var res = new GetApprovalRequestsResponse();
 
             var requests = _approvalRequestReader.Get(ApprovalRequestMyNoSqlEntity.GeneratePartitionKey(validatorId))
@@ -96,6 +101,24 @@ namespace KeyKeeperApi.Grpc
         public override async Task<ResolveApprovalRequestsResponse> ResolveApprovalRequests(ResolveApprovalRequestsRequest request, ServerCallContext context)
         {
             var validatorId = context.GetHttpContext().User.GetClaimOrDefault(Claims.KeyKeeperId);
+            var tenantId = context.GetHttpContext().User.GetTenantIdOrDefault();
+            var apiKeyId = context.GetHttpContext().User.GetClaimOrDefault(Claims.ApiKeyId);
+
+            var validatorLinkEntity = _validatorLinkReader.Get(
+                ValidatorLinkEntity.GeneratePartitionKey(tenantId),
+                ValidatorLinkEntity.GenerateRowKey(apiKeyId));
+
+            if (validatorLinkEntity == null)
+            {
+                return new ResolveApprovalRequestsResponse
+                {
+                    Error = new ValidatorApiError
+                    {
+                        Code = ValidatorApiError.Types.ErrorCodes.ExpiredApiKey,
+                        Message = "API key is expired or deleted"
+                    }
+                };
+            }
 
             Console.WriteLine($"===============================");
             Console.WriteLine("Receive ResolveApprovalRequests:");
@@ -106,38 +129,6 @@ namespace KeyKeeperApi.Grpc
             Console.WriteLine($"Signature: {request.Signature}");
             Console.WriteLine($"ResolutionDocumentEncBase64: {request.ResolutionDocumentEncBase64}");
             Console.WriteLine($"-------------------------------");
-
-            if (request.TransferSigningRequestId.Contains("-fake-"))
-            {
-                Console.WriteLine($"detect fake ID");
-                var strIndex = request.TransferSigningRequestId.Last();
-                if (int.TryParse($"{strIndex}", out var index) && index >= 0 && index <= 9)
-                {
-                    Console.WriteLine($"detect ID = {index}");
-                    var secret = _fakeRequestSecretAndNonce[$"-fake-{index}"].Key;
-                    var nonce = _fakeRequestSecretAndNonce[$"-fake-{index}"].Value;
-
-                    Console.WriteLine($"Secret: {Convert.ToBase64String(secret)}");
-                    Console.WriteLine($"Nonce: {Convert.ToBase64String(nonce)}");
-
-
-                    var dataEnc = Convert.FromBase64String(request.ResolutionDocumentEncBase64);
-                    var symcrypto = new SymmetricEncryptionService();
-                    var data = symcrypto.Decrypt(dataEnc, secret, nonce);
-
-                    var json = Encoding.UTF8.GetString(data);
-                    Console.WriteLine($"Receive Resolution: {request.TransferSigningRequestId} from {validatorId}");
-                    Console.WriteLine(json);
-
-                    var publicKey = context.GetHttpContext().User.GetClaimOrDefault(Claims.PublicKeyPem);
-                    if (!string.IsNullOrEmpty(publicKey))
-                    {
-                        var algo = new AsymmetricEncryptionService();
-                        var verify = algo.VerifySignature(data, Convert.FromBase64String(request.Signature), publicKey);
-                        Console.WriteLine($"Signature verification result: {verify.ToString().ToUpper()}");
-                    }
-                }
-            }
 
 
             var approvalRequest = _approvalRequestReader.Get(

@@ -18,6 +18,7 @@ service Invites {
     rpc Accept (AcceptRequest) returns (AcceptResponse); 
     rpc GetPing(PingRequest) returns (PingResponse);
     rpc RemoveVaultConnection (RemoveVaultConnectionRequest) returns (RemoveVaultConnectionResponse);
+    rpc RefreshPushNotificationFCMToken (RefreshPushNotificationFCMTokenRequest) returns (RefreshPushNotificationFCMTokenResponse);
 }
 
 service Version {
@@ -135,6 +136,14 @@ message RemoveVaultConnectionResponse {
 
 }
 
+message RefreshPushNotificationFCMTokenRequest {
+    string pushNotificationFCMToken = 1; // This registration token comes from the client FCM SDKs
+}
+
+message RefreshPushNotificationFCMTokenResponse {
+    ValidatorApiError error = 1; // NULL in success case; Error description in error case
+}
+
 
 // ********* Versions *********
 
@@ -162,6 +171,7 @@ message ValidatorApiError {
         WrongSignature = 3; // server do not acept signature from the request packege
         WrongInvitation = 4; // Invitation code is incorrect
         ExpiredInvitation = 5; // Invitation code is expared
+        ExpiredApiKey = 6; // API key is expared or deleted
     }
 
     ErrorCodes code = 1; // error code
