@@ -92,6 +92,26 @@ namespace KeyKeeperApi.Services
                     approvalRequest.ValidatorId,
                     response.SuccessCount,
                     response.FailureCount);
+
+                if (response.FailureCount > 0)
+                {
+                    var tokensList = JsonConvert.SerializeObject(tokens);
+
+                    foreach (var result in response.Responses.Where(r => r.IsSuccess == false))
+                    {
+                        _logger.LogWarning(
+                            "Fail push notification. TransferSigningRequestId: {TransferSigningRequestId}; ValidatorId: {ValidatorId}; MessageId: {MessageId}; MessagingErrorCode: {MessagingErrorCode}; Message: {Message}; Tokens: {TokensList}",
+                            approvalRequest.TransferSigningRequestId,
+                            approvalRequest.ValidatorId,
+                            result.MessageId,
+                            result.Exception.MessagingErrorCode,
+                            result.Exception.Message,
+                            tokensList);
+                    }
+
+                    
+                }
+
             }
             catch(Exception ex)
             {
