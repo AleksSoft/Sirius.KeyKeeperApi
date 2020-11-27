@@ -113,7 +113,7 @@ namespace KeyKeeperApi.Grpc
             validatorLinkEntity.PushNotificationFcmToken = request.PushNotificationFCMToken;
             await _validatorLinkWriter.InsertOrReplaceAsync(validatorLinkEntity);
 
-            _logger.LogInformation("Invitation accepted. InviteId='{InviteId}'; ValidatorId='{ValidatorId}'", request.InviteId, request.ValidatorId);
+            _logger.LogInformation("Invitation accepted. InviteId='{InviteId}'; ValidatorId='{ValidatorId}'; PushNotificationFcmToken='{PushNotificationFcmToken}'", request.InviteId, request.ValidatorId, request.PushNotificationFCMToken);
 
             return resp;
         }
