@@ -176,6 +176,6 @@ message ValidatorApiError {
 
     ErrorCodes code = 1; // error code
     string message = 2;  // error message in english
-
+    string data = 3;     // additional metadata for the error
 
 }

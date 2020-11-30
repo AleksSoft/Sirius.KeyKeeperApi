@@ -69,7 +69,8 @@ namespace KeyKeeperApi.Grpc
                     Error = new ValidatorApiError
                     {
                         Code = ValidatorApiError.Types.ErrorCodes.ExpiredApiKey,
-                        Message = "API key is expired or deleted"
+                        Message = "API key is expired or deleted",
+                        Data = apiKeyId
                     }
                 });
             }
@@ -115,7 +116,8 @@ namespace KeyKeeperApi.Grpc
                     Error = new ValidatorApiError
                     {
                         Code = ValidatorApiError.Types.ErrorCodes.ExpiredApiKey,
-                        Message = "API key is expired or deleted"
+                        Message = "API key is expired or deleted",
+                        Data = apiKeyId
                     }
                 };
             }
