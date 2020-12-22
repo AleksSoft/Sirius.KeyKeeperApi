@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KeyKeeperApi.ApiContract\KeyKeeperApi.ApiContract.csproj" />
+    <ProjectReference Include="..\KeyKeeperApi.ApiContract\KeyKeeperApi.ApiContract.csproj" PrivateAssets="All"/>
   </ItemGroup>
 
   <!--
