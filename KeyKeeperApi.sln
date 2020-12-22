@@ -60,9 +60,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sirius", "sirius", "{1A5AA8
 		deployment\settings\sirius\key-keeper-api.json = deployment\settings\sirius\key-keeper-api.json
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyKeeperApi.ApiContract", "src\KeyKeeperApi.ApiContract\KeyKeeperApi.ApiContract.csproj", "{3F65678A-B929-42D4-8D51-2A80203F8DEB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyKeeperApi.ApiContract", "src\KeyKeeperApi.ApiContract\KeyKeeperApi.ApiContract.csproj", "{3F65678A-B929-42D4-8D51-2A80203F8DEB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestGrpcApp", "src\TestGrpcApp\TestGrpcApp.csproj", "{51D5A11F-DB38-4CF6-8D46-717C81201E91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestGrpcApp", "src\TestGrpcApp\TestGrpcApp.csproj", "{51D5A11F-DB38-4CF6-8D46-717C81201E91}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyKeeperApi.ApiClient", "src\KeyKeeperApi.ApiClient\KeyKeeperApi.ApiClient.csproj", "{C5CD96D2-38AB-494C-BB76-C6CE46F667A8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -90,6 +92,10 @@ Global
 		{51D5A11F-DB38-4CF6-8D46-717C81201E91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{51D5A11F-DB38-4CF6-8D46-717C81201E91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{51D5A11F-DB38-4CF6-8D46-717C81201E91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5CD96D2-38AB-494C-BB76-C6CE46F667A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5CD96D2-38AB-494C-BB76-C6CE46F667A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5CD96D2-38AB-494C-BB76-C6CE46F667A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5CD96D2-38AB-494C-BB76-C6CE46F667A8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
